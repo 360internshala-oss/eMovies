@@ -1,0 +1,69 @@
+=== GET /health with Origin ===
+HTTP/2 200 
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: application/json
+date: Mon, 26 Oct 2026 10:45:30 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+vary: Origin
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::gdl4w-1793011553705-e7604234f80f
+content-length: 11
+
+=== GET /movies with Origin ===
+HTTP/2 200 
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: application/json
+date: Mon, 26 Oct 2026 10:45:30 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+vary: Origin
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::ztsgp-1793011553863-2c1400dead52
+content-length: 586
+
+=== OPTIONS preflight /movies ===
+HTTP/2 200 
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, QUERY
+access-control-allow-origin: *
+access-control-max-age: 600
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain; charset=utf-8
+date: Mon, 26 Oct 2026 10:45:54 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers, Access-Control-Request-Private-Network
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::sftrp-1793011554646-ebd28bcb3bcd
+content-length: 2
+
+=== /stream proxy with Range ===
+HTTP/2 426 
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: application/json
+date: Mon, 26 Oct 2026 10:45:54 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+vary: Origin
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::xk5xf-1793011554796-63d10a09eb45
+content-length: 27
+
+=== /stream proxy on a subtitle URL ===
+HTTP/2 502 
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: application/json
+date: Mon, 26 Oct 2026 10:45:54 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+vary: Origin
+x-vercel-cache: MISS
+x-vercel-id: iad1::iad1::c6cm4-1793011555188-faaee4e92a1e
+content-length: 38
+
