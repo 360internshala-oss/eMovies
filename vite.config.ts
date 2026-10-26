@@ -5,6 +5,9 @@ import path from 'node:path'
 /**
  * eMovies build config.
  *
+ * `VITE_BASE_PATH` sets the deployment base: `/` for a root domain (default)
+ * and `/<repo>/` for a GitHub Pages project site. See the deploy workflow.
+ *
  * The Filmy Flow API is consumed directly from the browser by default
  * (`VITE_API_BASE_URL`). If a deployment needs to hide the upstream origin or
  * work around a restrictive CORS policy, set `VITE_USE_DEV_PROXY=true` and run
@@ -14,7 +17,12 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:8787'
 
+  // Normalise to a leading and trailing slash: 'eMovies' → '/eMovies/'.
+  const rawBase = (env.VITE_BASE_PATH || '/').trim()
+  const base = rawBase === '/' ? '/' : `/${rawBase.replace(/^\/+|\/+$/g, '')}/`
+
   return {
+    base,
     plugins: [react()],
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },

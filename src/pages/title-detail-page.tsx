@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Link } from '@/router/Link'
 import { titlePath, watchPath } from '@/router/routes'
+import { withBase } from '@/router/base'
 import { useRoute, useRouter } from '@/router/RouterProvider'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -71,7 +72,7 @@ export function TitleDetailPage() {
   const audioDubs = (detail.data?.dubs ?? []).filter((dub) => dub.kind === 'audio' && !dub.original)
 
   const share = async () => {
-    const url = `${window.location.origin}${titlePath(detailPath)}`
+    const url = `${window.location.origin}${withBase(titlePath(detailPath))}`
     try {
       if (navigator.share) await navigator.share({ title: title?.title ?? 'eMovies', url })
       else {

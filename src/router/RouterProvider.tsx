@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { parseLocation, type RouteMatch } from './routes'
+import { stripBase, withBase } from './base'
 
 interface RouterContextValue {
   route: RouteMatch
@@ -10,7 +11,8 @@ interface RouterContextValue {
 const RouterContext = createContext<RouterContextValue | null>(null)
 
 function currentMatch(): RouteMatch {
-  return parseLocation(window.location.pathname, window.location.search)
+  // The address bar may contain the deployment base (e.g. `/eMovies/movies`).
+  return parseLocation(stripBase(window.location.pathname), window.location.search)
 }
 
 export function RouterProvider({ children }: { children: ReactNode }) {
@@ -42,15 +44,18 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     // Never navigate to a different origin from an internal link.
     if (url.origin !== window.location.origin) return
 
-    const nextPath = `${url.pathname}${url.search}`
-    if (nextPath === `${window.location.pathname}${window.location.search}`) {
+    // Work in app paths, then re-add the deployment base for the browser.
+    const appPath = stripBase(url.pathname)
+    const nextPath = `${appPath}${url.search}`
+    const currentPath = `${stripBase(window.location.pathname)}${window.location.search}`
+    if (nextPath === currentPath) {
       if (!keepScroll) window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
-    scrollPositions.current.set(window.location.pathname, window.scrollY)
-    window.history[replace ? 'replaceState' : 'pushState']({}, '', nextPath)
-    setRoute(parseLocation(url.pathname, url.search))
+    scrollPositions.current.set(stripBase(window.location.pathname), window.scrollY)
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', `${withBase(appPath)}${url.search}`)
+    setRoute(parseLocation(appPath, url.search))
     if (!keepScroll) window.scrollTo({ top: 0, behavior: 'auto' })
   }, [])
 

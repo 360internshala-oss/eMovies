@@ -165,12 +165,42 @@ npm ci && npm run build     # → dist/
 - **Netlify** — `dist` as publish dir plus `/* /index.html 200` in `public/_redirects`, or
   a `netlify.toml` redirect.
 - **Vercel** — framework "Vite", output `dist`, with a rewrite of all routes to `/index.html`.
-- **GitHub Pages** — requires a `404.html` copy of `index.html` (and a `base` in
-  `vite.config.ts` if served from a sub-path).
+- **GitHub Pages** — automated: [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)
+  type-checks, tests, builds with the correct base path, copies `index.html` to
+  `404.html` and publishes `dist/` on every push to `main` (see below).
 - **Nginx** — `try_files $uri $uri/ /index.html;`.
 
 If the host's CSP or the user's network blocks the API/media origins, enable proxy mode
 and run `scripts/dev-proxy.mjs` behind the same origin.
+
+### GitHub Pages (automated)
+
+The workflow [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)
+deploys on every push to `main` (and on manual dispatch). One-time setup:
+
+1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+2. Push to `main` (or run the workflow from the Actions tab).
+
+What the workflow does:
+
+- `npm ci`, `npm run typecheck`, `npm test` — the deploy is gated on a green suite
+- computes the base path (`/<repo>/`, or `/` for a `*.github.io` repository) and
+  builds with `VITE_BASE_PATH` + `VITE_API_BASE_URL`
+- copies `dist/index.html` to `dist/404.html` and adds `.nojekyll`, then uploads
+  and deploys the artifact with the official Pages actions
+
+Project sites live at `https://<owner>.github.io/<repo>/`. The router is
+base-aware (`src/router/base.ts`): the address bar shows `/eMovies/movies` while
+the app routes on `/movies`, so deep links, refreshes and back/forward all work.
+GitHub Pages serves `404.html` for unknown paths, which boots the SPA shell and
+lets the router resolve the URL — no hash routing, no redirect hacks.
+
+To run the same production build locally against a sub-path:
+
+```bash
+VITE_BASE_PATH=/eMovies/ npm run build
+npx vite preview --base /eMovies/ --port 4173
+```
 
 ## Known limitations
 
