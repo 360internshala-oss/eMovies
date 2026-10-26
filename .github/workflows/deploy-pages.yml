@@ -60,10 +60,22 @@ jobs:
           path: test-results
           if-no-files-found: warn
 
+      # Failures become ::error:: annotations so they are readable through the
+      # checks API even when artifact downloads / log streams are unavailable.
       - name: Fail on test failures
         if: steps.tests.outcome == 'failure'
         run: |
           echo "Tests failed — see the vitest-report artifact."
+          python3 - <<'PY'
+          import os, re
+          path = 'test-results/vitest.txt'
+          text = open(path, encoding='utf-8', errors='replace').read() if os.path.exists(path) else 'no test output'
+          # Keep the interesting lines, strip ANSI colour codes.
+          clean = re.sub(r'\x1b\[[0-9;]*m', '', text)
+          lines = [l for l in clean.splitlines() if re.search(r'(FAIL|×|AssertionError|Error:|FAIL )', l)]
+          body = '\n'.join(lines[-40:]) or clean[-3000:]
+          print('::error::' + body.replace('%', '%25').replace('\r', '').replace('\n', '%0A'))
+          PY
           exit 1
 
       - name: Resolve Pages base path
