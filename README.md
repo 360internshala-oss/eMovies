@@ -9,6 +9,13 @@ provide is hidden or explicitly labelled. The full evidence table lives in
 [docs/API_CAPABILITIES.md](docs/API_CAPABILITIES.md) and is also rendered in-app at
 **`/capabilities`**.
 
+| Phone (390 px) | Catalogue | Title detail | Player settings | Light theme |
+| --- | --- | --- | --- | --- |
+| ![Home](docs/screens/home-mobile.png) | ![Movies](docs/screens/catalogue-mobile.png) | ![Detail](docs/screens/title-mobile.png) | ![Player settings](docs/screens/player-settings-mobile.png) | ![Light](docs/screens/light-theme-mobile.png) |
+
+Screenshots are produced by the audit harness in `scripts/qa/` (fixture data, not live
+catalogue data).
+
 ---
 
 ## Quick start
@@ -77,13 +84,42 @@ No `no-cors`, opaque-fetch or third-party CORS-bypass tricks are used anywhere.
 History API routing (no router dependency) with real back/forward, deep links and a
 404 fallback.
 
+## Mobile web app
+
+Designed phone-first and verified at **320, 390, 768 and 1440 px** (84 route/viewport
+checks, 0 overflow, 0 undersized tap targets — see *Responsive & interaction QA*):
+
+- **Navigation**: a 5-item bottom bar with safe-area padding below `lg`, full desktop nav
+  at `lg+`; every secondary route (Trending, Recently Added, Top Rated, Continue Watching,
+  History, Settings, API map) is reachable from the header menu, the footer or in-content
+  links — no dead ends on a phone.
+- **Touch targets**: ≥24 px (most 44 px) for player controls, switches, chips, carousel
+  dots, footer links and dialog buttons; the seek bar uses a full 32 px row.
+- **Player on phones**: inline control-bar menus collapse into one touch-sized
+  *Playback settings* sheet (quality, speed, subtitles, audio, aspect ratio, episodes)
+  that only lists what the API returned; error panels get their own scrollable layer so
+  nothing is clipped, and the stage grows instead of forcing a 16:9 box.
+- **Safe areas & zoom**: `env(safe-area-inset-*)` padding on both fixed bars, 16 px form
+  fields (no iOS zoom-on-focus), `text-size-adjust`, `overflow-x` guarded globally.
+- **Search** is full-screen on phones, a palette on desktop; **filters** open a bottom
+  sheet with filter chips that have real hit areas.
+- Light **and** dark themes are both contrast-checked; the fixed header gradient adapts
+  to the theme.
+
 ## Player
 
 Custom HTML5 player (`src/features/player/`) — no third-party player library:
 
 - play/pause, seek bar with buffered range and keyboard-accessible range input
 - elapsed / remaining time, volume + mute, speed 0.25×–2×, fullscreen, PiP when supported
-- **quality menu lists only renditions `/play` actually returned** (typically 360p–1080p)
+- **quality menu lists only renditions `/play` actually returned** (typically 360p–1080p);
+  the DASH (H.265) manifest the API mixes into the same `streams` array is never fed to
+  `<video>` — that is what used to produce *“The stream format is not supported by this
+  browser”*
+- **failure recovery**: on a media error the player swaps transport (CDN ⇄ API proxy),
+  drops to a lower rendition, then re-fetches a freshly signed `/play` link once; if it
+  still fails it probes the URL and reports the real status (403 expired link, 429 rate
+  limit, HTML error page, unreachable host) with a *Get a fresh link* action
 - **subtitle menu lists only real `/caption` tracks**, converted SRT → WebVTT in memory;
   the menu is hidden when the API returns none
 - keyboard: `space/k` play, `←/J` `→/L` ±10 s, `↑/↓` volume, `M` mute, `F` fullscreen,
@@ -103,7 +139,8 @@ See [docs/API_CAPABILITIES.md](docs/API_CAPABILITIES.md) for the full evidence.
 Short version:
 
 **Verified and working:** catalogue endpoints, trending, search, detail, cast, recs,
-`/play` MP4 renditions, `/caption` subtitle tracks, `hasMore` pagination.
+`/play` MP4 renditions (with the DASH entry filtered out), `/caption` subtitle tracks,
+`hasMore` pagination.
 
 **Deliberately absent (no API support):** Live Sports, search autocomplete (`/suggest`
 returns 404), skip intro/recap, episode lists & season counts, per-provider catalogues,
@@ -152,6 +189,25 @@ npx vitest run tests/unit   # 62 unit tests only
 - `tests/unit/player.test.ts` — capability detection, SRT→VTT, quality defaults, URL safety
 - `tests/integration/routes.test.tsx` — jsdom render of every route, nav, player chrome,
   empty/error states, 404 fallback
+
+### Responsive & interaction QA (headless Chrome)
+
+```bash
+npm run dev                                   # or: npm run preview
+npm i --no-save puppeteer-core
+APP_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome npm run audit:mobile
+APP_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome npm run audit:flows
+```
+
+`scripts/qa/mobile-audit.mjs` renders 21 routes at 4 viewports (84 checks) and fails on
+horizontal overflow, missing navigation, clipped text or tap targets under 24 px.
+`scripts/qa/mobile-flows.mjs` drives the UI: bottom-nav navigation, filter sheet applying a
+genre, search overlay → title, theme toggle, and the player settings sheet / inline menus.
+Both run in CI (`.github/workflows/mobile-audit.yml`) and upload screenshots + JSON reports.
+
+Headless Chrome in CI ships without an H.264 decoder, so the flow harness stubs
+`HTMLMediaElement` to exercise **player UI** states; real decoding was verified manually
+in a browser and is not claimed by the automated suite.
 
 ## Deployment
 
@@ -212,7 +268,11 @@ npx vite preview --base /eMovies/ --port 4173
   error instead of retrying forever.
 - The API's `/stream` proxy returns **426** for MP4, so video plays directly from the CDN;
   subtitles go through `/stream` because the CDN omits CORS headers for `.srt`.
-- DASH/HEVC manifests need an `X-MB-Token` header and an MSE player — not implemented.
+- DASH/HEVC manifests need an `X-MB-Token` header and an MSE player — not implemented, so
+  they are excluded from quality selection rather than attempted.
+- If the CDN itself refuses a signed link (403/404/429) or is unreachable from your
+  network, no rendition will play; the player says which of those happened instead of
+  blaming the format.
 - No episode/season metadata endpoint exists, so a series without resolvable siblings shows
   a stated limitation rather than an invented episode grid.
 - Per-provider catalogues cannot be built (subjects carry no platform field).

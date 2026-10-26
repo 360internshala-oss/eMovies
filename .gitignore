@@ -10,3 +10,6 @@ coverage
 *.log
 .vite
 *.tsbuildinfo
+
+# QA audit output (screenshots are uploaded as CI artifacts instead)
+artifacts/
