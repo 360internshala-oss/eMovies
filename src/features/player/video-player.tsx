@@ -566,7 +566,13 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       ref={containerRef}
       className={cn(
         'relative isolate w-full overflow-hidden bg-black',
-        fullscreen ? 'h-screen' : 'aspect-video max-h-[88svh] rounded-none md:rounded-2xl',
+        fullscreen
+          ? 'h-screen'
+          : mediaError
+            // An error panel needs room: let the stage grow instead of forcing
+            // a 16:9 box that would clip the message on a phone.
+            ? 'min-h-[56svh] rounded-none md:aspect-video md:min-h-0 md:max-h-[88svh] md:rounded-2xl'
+            : 'aspect-video max-h-[88svh] rounded-none md:rounded-2xl',
       )}
       onPointerMove={showControls}
       onPointerDown={showControls}
