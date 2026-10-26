@@ -130,7 +130,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1114
+    "textLength": 1103
   },
   {
     "viewport": "xs-320",
@@ -512,7 +512,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1095
+    "textLength": 1106
   },
   {
     "viewport": "iphone-390",
@@ -569,7 +569,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1019
+    "textLength": 1008
   },
   {
     "viewport": "iphone-390",
@@ -835,7 +835,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1151
+    "textLength": 1140
   },
   {
     "viewport": "tablet-768",
@@ -930,7 +930,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1246
+    "textLength": 1235
   },
   {
     "viewport": "tablet-768",
@@ -1234,7 +1234,7 @@
     "bottomNavVisible": false,
     "desktopNavVisible": true,
     "hasMain": true,
-    "textLength": 1172
+    "textLength": 1161
   },
   {
     "viewport": "desktop-1440",

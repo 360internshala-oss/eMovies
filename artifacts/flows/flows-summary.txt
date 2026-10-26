@@ -1,2 +1,1 @@
-flows: 15 checks, 1 failed
-tablet-768 player settings sheet (touch UI) :: Node is either not clickable or not an Element
+flows: 15 checks, 0 failed
