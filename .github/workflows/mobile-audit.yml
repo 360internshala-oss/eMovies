@@ -25,11 +25,17 @@ jobs:
         run: |
           npx vite preview --port 4173 --host 127.0.0.1 &
           for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:4173/ && break; sleep 1; done
-      - name: Audit
+      - name: Audit (layout)
         env:
           APP_URL: http://127.0.0.1:4173
           CHROME_PATH: /usr/bin/google-chrome
         run: node scripts/qa/mobile-audit.mjs
+
+      - name: Flows (interaction)
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/qa/mobile-flows.mjs
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
