@@ -106,12 +106,25 @@ jobs:
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
 
-      # `enablement: true` creates the Pages site (build type: "GitHub Actions")
-      # on the first run, so no manual Settings step is required.
+      # Creating the Pages site needs repo-administration rights, which the
+      # default GITHUB_TOKEN does not have: the one-time enablement is a human
+      # step (Settings → Pages → Source: GitHub Actions). Fail early with a
+      # clear message instead of a generic action error.
+      - name: Check that Pages is enabled
+        id: pages_status
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages")
+          echo "Pages site API status: $code"
+          if [ "$code" = "404" ]; then
+            echo "::error::GitHub Pages is not enabled for ${{ github.repository }}. Enable it once: Settings → Pages → Build and deployment → Source: GitHub Actions, then re-run this workflow."
+            exit 1
+          fi
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

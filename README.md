@@ -178,7 +178,11 @@ and run `scripts/dev-proxy.mjs` behind the same origin.
 The workflow [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)
 deploys on every push to `main` (and on manual dispatch). One-time setup:
 
-1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+1. **Settings → Pages → Build and deployment → Source: GitHub Actions.** This one
+   step must be done by a repository admin — creating the Pages site requires
+   administration rights that the workflow's `GITHUB_TOKEN` does not have, so
+   `configure-pages` cannot do it. Until it is enabled the build job stops at
+   "Check that Pages is enabled" with that instruction.
 2. Push to `main` (or run the workflow from the Actions tab).
 
 What the workflow does:
