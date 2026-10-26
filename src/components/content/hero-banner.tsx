@@ -62,7 +62,7 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
   return (
     <section
       aria-label="Featured titles"
-      className="relative isolate min-h-[78svh] w-full overflow-hidden sm:min-h-[70svh] lg:min-h-[76svh]"
+      className="relative isolate min-h-[64svh] w-full overflow-hidden sm:min-h-[70svh] lg:min-h-[76svh]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -94,7 +94,7 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/55 to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-4 pb-12 pt-28 sm:pb-16 lg:px-8 lg:pb-20">
+      <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-4 pb-8 pt-24 sm:pb-16 sm:pt-28 lg:px-8 lg:pb-20">
         <div key={active.detailPath} className="max-w-2xl animate-fade-up">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Badge variant="primary" className="uppercase tracking-widest">
@@ -104,7 +104,7 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
             {active.vipLevel ? <Badge variant="gold">VIP {active.vipLevel}</Badge> : null}
           </div>
 
-          <h1 className="font-display text-3xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+          <h1 className="font-display text-[1.75rem] font-extrabold leading-[1.08] tracking-tight text-balance sm:text-5xl sm:leading-[1.05] lg:text-6xl">
             {active.title}
           </h1>
 
@@ -143,16 +143,16 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
             <p className="mt-3 text-xs text-muted-foreground">No synopsis is provided for this title by the catalogue API.</p>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+          <div className="mt-5 flex flex-wrap items-center gap-2 sm:mt-6 sm:gap-2.5">
             <Link
               to={watchPath(active.detailPath)}
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-black shadow-xl transition hover:bg-white/90 focus-ring"
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-black shadow-xl transition hover:bg-white/90 focus-ring sm:flex-none"
             >
               <Play className="h-4 w-4 fill-current" /> Play now
             </Link>
             <Link
               to={titlePath(active.detailPath)}
-              className="inline-flex h-12 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 focus-ring"
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 focus-ring sm:flex-none"
             >
               <Info className="h-4 w-4" /> More info
             </Link>
@@ -175,7 +175,7 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
               type="button"
               aria-label="Previous featured title"
               onClick={() => go(-1)}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur transition hover:text-white focus-ring"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur transition hover:text-white focus-ring sm:h-8 sm:w-8"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -187,18 +187,22 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
                   aria-selected={slideIndex === index}
                   aria-label={`Show ${slide.title}`}
                   onClick={() => setIndex(slideIndex)}
-                  className={cn(
-                    'h-1.5 rounded-full transition-all focus-ring',
-                    slideIndex === index ? 'w-7 bg-primary' : 'w-1.5 bg-white/30 hover:bg-white/60',
-                  )}
-                />
+                  className="group flex h-9 items-center rounded-full px-1 focus-ring"
+                >
+                  <span
+                    className={cn(
+                      'block h-1.5 rounded-full transition-all',
+                      slideIndex === index ? 'w-7 bg-primary' : 'w-1.5 bg-white/30 group-hover:bg-white/60',
+                    )}
+                  />
+                </button>
               ))}
             </div>
             <button
               type="button"
               aria-label="Next featured title"
               onClick={() => go(1)}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur transition hover:text-white focus-ring"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur transition hover:text-white focus-ring sm:h-8 sm:w-8"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

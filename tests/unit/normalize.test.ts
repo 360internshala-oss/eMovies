@@ -292,6 +292,50 @@ describe('normalizePlay', () => {
     expect(source.hasResource).toBe(false)
   })
 
+  it('never exposes a DASH manifest as a playable quality', () => {
+    // Regression: the API puts a DASH entry in `streams` (format: "DASH",
+    // url ending in .mpd). Feeding that to <video> is what produced
+    // "The stream format is not supported by this browser".
+    const source = normalizePlay({
+      streams: [
+        { id: 'd1', format: 'DASH', resolutions: '1080,720,480', codecName: 'hevc', url: 'https://sbcdnw/x/index_web.mpd' },
+        { id: 'm1', format: 'MP4', resolutions: '720', codecName: 'h264', url: 'https://bcdnxw/720.mp4?sign=1' },
+        { id: 'm2', format: 'MP4', resolutions: '480', codecName: 'h264', url: 'https://bcdnxw/480.mp4?sign=1' },
+      ],
+      upstream: { data: { dash: [{ url: 'https://sbcdnw/upstream.mpd' }], hls: [] } },
+    })
+    expect(source.qualities.map((quality) => quality.resolution)).toEqual([720, 480])
+    for (const quality of source.qualities) expect(quality.url).toMatch(/\.mp4/)
+    expect(source.dashUrl).toBe('https://sbcdnw/x/index_web.mpd')
+  })
+
+  it('detects manifests by URL when the format field is missing', () => {
+    const source = normalizePlay({
+      streams: [
+        { id: 'a', resolutions: '2160', url: 'https://cdn/master.m3u8' },
+        { id: 'b', resolutions: '720', url: 'https://cdn/720.mp4?sign=x' },
+        { id: 'c', resolutions: '1080', url: 'https://cdn/manifest.mpd' },
+        { id: 'd', resolutions: '1080', url: 'https://cdn/signed-no-extension' },
+      ],
+    })
+    expect(source.qualities.map((quality) => quality.id)).toEqual(['b'])
+    expect(source.hlsUrl).toBe('https://cdn/master.m3u8')
+    expect(source.dashUrl).toBe('https://cdn/manifest.mpd')
+  })
+
+  it('skips VIP-locked and unplayable streams but reports how many were withheld', () => {
+    const source = normalizePlay({
+      streams: [
+        { id: 'locked', format: 'MP4', resolutions: '1080', url: 'https://cdn/1080.mp4', vipLocked: true },
+        { id: 'off', format: 'MP4', resolutions: '720', url: 'https://cdn/720.mp4', playable: false },
+        { id: 'ok', format: 'MP4', resolutions: '480', url: 'https://cdn/480.mp4', playable: true },
+      ],
+    })
+    expect(source.qualities.map((quality) => quality.id)).toEqual(['ok'])
+    expect(source.lockedCount).toBe(2)
+    expect(source.hasResource).toBe(true)
+  })
+
   it('picks a sensible default quality for the viewport budget', () => {
     const { qualities } = normalizePlay(playPayload)
     expect(pickDefaultQuality(qualities, 720)?.resolution).toBe(480)

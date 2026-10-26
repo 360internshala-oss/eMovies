@@ -28,7 +28,7 @@ const statusMeta = {
 export function CapabilitiesPage() {
   useDocumentTitle('API capabilities')
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-24 pt-20 lg:pt-24">
+    <div className="mx-auto max-w-4xl px-4 pb-16 pt-20 lg:pb-24 lg:pt-24">
       <PageHeader
         eyebrow="Transparency"
         title="API capability map"
@@ -69,7 +69,8 @@ export function CapabilitiesPage() {
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-semibold">Endpoints consumed</h2>
         <div className="overflow-hidden rounded-xl border border-border">
-          <table className="w-full text-left text-xs">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <table className="w-full min-w-[34rem] text-left text-xs">
             <thead className="bg-white/5 text-[11px] uppercase tracking-widest text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-semibold">Endpoint</th>
@@ -85,6 +86,7 @@ export function CapabilitiesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </section>
 

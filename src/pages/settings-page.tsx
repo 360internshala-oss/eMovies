@@ -153,7 +153,7 @@ export function SettingsPage() {
           >
             <RotateCcw className="h-3.5 w-3.5" /> Reset preferences
           </Button>
-          <Link to="/my-list" className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs font-semibold">
+          <Link to="/my-list" className="inline-flex h-10 items-center rounded-full border border-border px-4 text-xs font-semibold">
             Manage My List
           </Link>
         </div>

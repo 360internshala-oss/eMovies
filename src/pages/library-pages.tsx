@@ -44,7 +44,7 @@ export function MyListPage() {
   const { state, removeFromList } = useLibrary()
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 pb-16 pt-20 lg:px-8 lg:pt-24">
+    <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-20 lg:px-8 lg:pb-16 lg:pt-24">
       <PageHeader
         eyebrow="Your library"
         title="My List"
@@ -98,7 +98,7 @@ export function ContinueWatchingPage() {
   const { continueWatching, removeFromHistory } = useLibrary()
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 pb-16 pt-20 lg:px-8 lg:pt-24">
+    <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-20 lg:px-8 lg:pb-16 lg:pt-24">
       <PageHeader
         eyebrow="Your library"
         title="Continue watching"

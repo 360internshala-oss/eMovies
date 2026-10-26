@@ -136,8 +136,8 @@ export function TitleDetailPage() {
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</h3>
         <div className="rail gap-3 px-0">
           {members.map((member) => (
-            <div key={`${member.id}-${member.role ?? label}`} className="w-24 shrink-0 text-center">
-              <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border border-border bg-muted">
+            <div key={`${member.id}-${member.role ?? label}`} className="w-20 shrink-0 text-center sm:w-24">
+              <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border border-border bg-muted sm:h-24 sm:w-24">
                 {member.avatar ? (
                   <img src={member.avatar} alt="" loading="lazy" className="h-full w-full object-cover" />
                 ) : (
@@ -157,20 +157,20 @@ export function TitleDetailPage() {
   return (
     <article className="pb-16">
       {/* backdrop */}
-      <div className="relative h-[46svh] min-h-[300px] w-full overflow-hidden sm:h-[52svh]">
+      <div className="relative h-[38svh] min-h-[240px] w-full overflow-hidden sm:h-[52svh] sm:min-h-[300px]">
         <SmartImage src={title.backdrop ?? title.poster} alt="" wrapperClassName="h-full w-full" className="object-cover" priority fallbackLabel={title.title} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
         <Link
           to="/"
-          className="absolute left-4 top-20 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/70 lg:left-8"
+          className="absolute left-3 top-16 z-10 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-black/45 px-3 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/70 sm:top-20 lg:left-8"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back
         </Link>
       </div>
 
-      <div className="relative z-10 mx-auto -mt-28 max-w-[1440px] px-4 lg:-mt-32 lg:px-8">
+      <div className="relative z-10 mx-auto -mt-24 max-w-[1440px] px-4 lg:-mt-32 lg:px-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
-          <div className="mx-auto w-36 shrink-0 sm:mx-0 sm:w-44 lg:w-52">
+          <div className="mx-auto w-28 shrink-0 sm:mx-0 sm:w-44 lg:w-52">
             <SmartImage
               src={title.poster}
               alt={`${title.title} poster`}
@@ -188,7 +188,7 @@ export function TitleDetailPage() {
               {!title.hasResource ? <Badge variant="muted">No stream advertised</Badge> : null}
             </div>
 
-            <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-balance sm:text-4xl">{title.title}</h1>
+            <h1 className="font-display text-[1.6rem] font-extrabold leading-tight tracking-tight text-balance sm:text-4xl">{title.title}</h1>
 
             <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
               {rating ? (
@@ -226,7 +226,7 @@ export function TitleDetailPage() {
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Link
                 to={watchPath(title.detailPath, resume)}
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-black transition hover:bg-white/90 focus-ring"
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-black transition hover:bg-white/90 focus-ring sm:flex-none"
               >
                 <Play className="h-4 w-4 fill-current" />
                 {progress && progress.position > 5 ? `Resume ${formatRuntime(progress.position) ?? ''}`.trim() : 'Play'}
@@ -236,7 +236,7 @@ export function TitleDetailPage() {
                   href={title.trailerUrl}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="inline-flex h-11 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 text-sm font-semibold backdrop-blur transition hover:bg-white/20"
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 text-sm font-semibold backdrop-blur transition hover:bg-white/20 sm:flex-none"
                 >
                   Trailer
                 </a>
@@ -265,7 +265,7 @@ export function TitleDetailPage() {
         </div>
 
         {/* overview + facts */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1.6fr_1fr]">
           <div>
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">Synopsis</h2>
             {detail.data?.overview ? (

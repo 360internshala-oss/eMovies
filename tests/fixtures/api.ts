@@ -181,8 +181,28 @@ export const playPayload = {
       proxy_url: '/stream?u=1080',
       playable: true,
     },
+    {
+      id: '7231673470151967104',
+      format: 'DASH',
+      resolutions: '1080,720,480',
+      size: '0',
+      codecName: 'hevc',
+      url: 'https://sbcdnw.hakunaymatata.com/dash/2190807691784770592_1_1_1080_h265_637/index_web.mpd',
+      proxy_url: '/stream?u=dash',
+      playable: true,
+    },
   ],
-  upstream: { data: { streams: [], dash: [], hls: [], hasResource: true, vipLocked: false } },
+  // The real API appends a DASH (H.265) manifest to `streams`; it must never be
+  // treated as a playable MP4 rendition.
+  upstream: {
+    data: {
+      streams: [],
+      dash: [{ id: '7231673470151967104', format: 'DASH', resolutions: '1080,720,480', url: 'https://sbcdnw.hakunaymatata.com/dash/x/index_web.mpd', codecName: 'hevc' }],
+      hls: [],
+      hasResource: true,
+      vipLocked: false,
+    },
+  },
 }
 
 export const captionPayload = {

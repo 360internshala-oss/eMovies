@@ -14,9 +14,9 @@ export function BottomNav({ onOpenSearch }: { onOpenSearch: () => void }) {
   return (
     <nav
       aria-label="Primary mobile navigation"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 glass pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 glass pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-5 gap-0">
         {MOBILE_NAV.map((item) => {
           const Icon = ICONS[item.icon as keyof typeof ICONS] ?? Home
           const active = isActive(item.to)
@@ -27,7 +27,7 @@ export function BottomNav({ onOpenSearch }: { onOpenSearch: () => void }) {
                   type="button"
                   onClick={onOpenSearch}
                   aria-label="Open search"
-                  className="flex w-full flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-muted-foreground transition hover:text-foreground"
+                  className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium text-muted-foreground transition hover:text-foreground"
                 >
                   <Icon className="h-5 w-5" />
                   {item.label}
@@ -41,7 +41,7 @@ export function BottomNav({ onOpenSearch }: { onOpenSearch: () => void }) {
                 to={item.to}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex w-full flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition',
+                  'flex min-h-14 w-full flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition',
                   active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
               >

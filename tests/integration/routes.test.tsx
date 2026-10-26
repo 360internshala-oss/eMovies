@@ -183,7 +183,10 @@ describe('title + player routes', () => {
     // Quality labels reflect real API renditions only.
     expect(screen.getByLabelText('Playback quality')).toHaveTextContent(/auto/i)
     // The resolved rendition is a real API stream, not a fabricated quality.
-    expect(document.querySelector('video')?.getAttribute('src')).toContain('1080.mp4')
+    // The DASH manifest the API returns alongside the MP4s must never be used.
+    const src = document.querySelector('video')?.getAttribute('src') ?? ''
+    expect(src).toContain('.mp4')
+    expect(src).not.toContain('.mpd')
   })
 
   it('renders a clear empty state when the API has no streams', async () => {
