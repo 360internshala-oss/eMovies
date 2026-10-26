@@ -35,7 +35,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1041
+    "textLength": 1030
   },
   {
     "viewport": "xs-320",
@@ -170,7 +170,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1008
+    "textLength": 1019
   },
   {
     "viewport": "xs-320",
@@ -375,13 +375,11 @@
     "overflowing": [],
     "smallTargets": [],
     "tinyText": [],
-    "clipped": [
-      "p.truncate.text-sm.font-semibold"
-    ],
+    "clipped": [],
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 989
+    "textLength": 772
   },
   {
     "viewport": "xs-320",
@@ -571,7 +569,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1008
+    "textLength": 1019
   },
   {
     "viewport": "iphone-390",
@@ -780,7 +778,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 989
+    "textLength": 772
   },
   {
     "viewport": "iphone-390",
@@ -837,7 +835,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1151
+    "textLength": 1140
   },
   {
     "viewport": "tablet-768",
@@ -932,7 +930,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1235
+    "textLength": 1246
   },
   {
     "viewport": "tablet-768",
@@ -970,7 +968,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1140
+    "textLength": 1151
   },
   {
     "viewport": "tablet-768",
@@ -1179,7 +1177,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1041
+    "textLength": 939
   },
   {
     "viewport": "tablet-768",
@@ -1369,7 +1367,7 @@
     "bottomNavVisible": false,
     "desktopNavVisible": true,
     "hasMain": true,
-    "textLength": 1161
+    "textLength": 1172
   },
   {
     "viewport": "desktop-1440",
@@ -1578,7 +1576,7 @@
     "bottomNavVisible": false,
     "desktopNavVisible": true,
     "hasMain": true,
-    "textLength": 1061
+    "textLength": 959
   },
   {
     "viewport": "desktop-1440",
