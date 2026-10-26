@@ -1,0 +1,33 @@
+name: build-debug (temporary)
+on:
+  push:
+    branches: [arena/3d841a48-emovies]
+    paths: ['.github/workflows/build-debug.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build like the deploy does
+        env:
+          VITE_BASE_PATH: /eMovies/
+          VITE_API_BASE_URL: https://filmy-flow-api.vercel.app
+        run: npm run build
+      - name: Report bundle consistency
+        run: |
+          {
+            echo "index.html references:"
+            grep -o '\(src\|href\)="[^"]*"' dist/index.html
+            echo "dist/assets:"
+            ls -1 dist/assets
+            echo "size: $(du -sh dist | cut -f1)"
+          } | tee report.txt
+          echo "::error::$(tr '\n' '|' < report.txt | head -c 3000)"
