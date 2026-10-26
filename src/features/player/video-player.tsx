@@ -653,7 +653,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       <div
         className={cn(
           'pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/80 to-transparent p-3 pb-10 transition-opacity duration-300 sm:p-4',
-          controlsVisible ? 'opacity-100' : 'opacity-0',
+          controlsVisible && !mediaError ? 'opacity-100' : 'hidden',
         )}
       >
         <div className="pointer-events-auto flex min-w-0 items-start gap-2">
@@ -695,15 +695,20 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       </div>
 
       {/* center state */}
-      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 z-10 flex items-center justify-center',
+          mediaError && 'z-30 overflow-y-auto overscroll-contain p-2 sm:p-0',
+        )}
+      >
         {mediaError ? (
           <div
             role="alert"
-            className="pointer-events-auto mx-3 w-full max-w-md rounded-2xl border border-white/15 bg-black/85 p-4 text-center backdrop-blur sm:mx-4 sm:p-5"
+            className="pointer-events-auto my-auto w-full max-w-md rounded-2xl border border-white/15 bg-black/85 p-3.5 text-center backdrop-blur sm:p-5"
           >
             <TriangleAlert className="mx-auto mb-2 h-7 w-7 text-destructive" />
-            <h2 className="text-base font-semibold text-white">Playback failed</h2>
-            <p className="mt-1 text-sm text-white/75">{mediaError.message}</p>
+            <h2 className="text-sm font-semibold text-white sm:text-base">Playback failed</h2>
+            <p className="mt-1 text-[13px] leading-snug text-white/75 sm:text-sm">{mediaError.message}</p>
             {mediaError.detail ? <p className="mt-1 text-[11px] uppercase tracking-widest text-white/40">{mediaError.detail}</p> : null}
             <div className="mt-3 flex flex-wrap justify-center gap-2">
               {mediaError.canRefresh ? (
@@ -742,7 +747,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
                 Details
               </Link>
             </div>
-            <p className="mt-3 text-[11px] leading-snug text-white/40">
+            <p className="mt-2.5 hidden text-[11px] leading-snug text-white/40 sm:block">
               Only the renditions listed by the API are used. If every one fails, the fault is in the upstream stream or CDN — not in this
               player.
             </p>
@@ -760,7 +765,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
           </button>
         ) : null}
 
-        {seekFeedback ? (
+        {seekFeedback && !mediaError ? (
           <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur">
               {seekFeedback === 'forward' ? <RotateCw className="h-7 w-7" /> : <RotateCcw className="h-7 w-7" />}
@@ -822,7 +827,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       <div
         className={cn(
           'absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-2.5 pt-10 transition-opacity duration-300 sm:px-4',
-          controlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
+          mediaError ? 'hidden' : controlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
         <SeekBar

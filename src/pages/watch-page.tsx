@@ -112,7 +112,7 @@ export function WatchPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1440px] px-0 pb-24 pt-16 md:px-4 md:pt-20 lg:px-8 lg:pt-24">
+    <div className="mx-auto max-w-[1440px] px-0 pb-10 pt-14 md:px-4 md:pt-20 lg:px-8 lg:pb-24 lg:pt-24">
       <div className="mb-2 hidden items-center gap-2 px-4 md:flex">
         <Link
           to={titlePath(detailPath)}
