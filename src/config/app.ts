@@ -18,8 +18,13 @@ export const APP = {
    * see README → "CORS & proxy mode".
    */
   useProxy: rawProxy,
-  /** Prefer re-signed CDN URLs over the API's `/stream` proxy for playback. */
-  preferDirectStreams: import.meta.env.VITE_PREFER_DIRECT_STREAMS === 'true',
+  /**
+   * Playback source order. Verified behaviour: the API's `/stream` media proxy
+   * answers 426 for MP4 ranges, while the signed CDN URLs are directly
+   * playable and send `access-control-allow-origin: *`. Direct is therefore the
+   * default; set VITE_PREFER_DIRECT_STREAMS=false to try the proxy first.
+   */
+  preferDirectStreams: import.meta.env.VITE_PREFER_DIRECT_STREAMS !== 'false',
   requestTimeoutMs: Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS ?? 20000),
   /** Number of catalogue pages a filter/search sweep will walk looking for matches. */
   maxFilterSweepPages: Number(import.meta.env.VITE_MAX_SWEEP_PAGES ?? 6),

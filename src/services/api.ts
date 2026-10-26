@@ -172,6 +172,11 @@ export async function fetchCatalogPage(kind: CatalogKind, page: number, args: Fe
   return result
 }
 
+/** Clears the in-memory page cache (used when the user asks for fresh data). */
+export function clearCatalogCache(): void {
+  pageCache.clear()
+}
+
 /** Fetch several pages in sequence, stopping early once `target` matches exist. */
 export async function sweepCatalog(
   kind: CatalogKind | 'trending',
