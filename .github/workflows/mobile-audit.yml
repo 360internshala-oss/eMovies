@@ -1,0 +1,39 @@
+name: mobile-audit (temporary)
+
+on:
+  push:
+    branches: [arena/3d841a48-emovies]
+    paths: ['.github/workflows/mobile-audit.yml', 'src/**', 'scripts/qa/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm i --no-save puppeteer-core@23
+      - run: npm run build
+      - name: Serve the build
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:4173/ && break; sleep 1; done
+      - name: Audit
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/qa/mobile-audit.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-screens
+          path: artifacts
+          if-no-files-found: warn
