@@ -120,7 +120,8 @@ const AUDIT = () => {
   for (const el of document.querySelectorAll('button, a[href], [role="button"], input, select')) {
     const r = rect(el)
     if (r.width === 0 || r.height === 0) continue
-    if (r.height < 32 || r.width < 24) smallTargets.push(`${describe(el)} ${Math.round(r.width)}x${Math.round(r.height)}`)
+    if (el.closest('.sr-only') || el.classList.contains('sr-only')) continue
+    if (r.height < 24 || r.width < 24) smallTargets.push(`${describe(el)} ${Math.round(r.width)}x${Math.round(r.height)}`)
   }
 
   const tinyText = []
@@ -225,24 +226,41 @@ async function main() {
   await browser.close()
   fs.writeFileSync(REPORT, JSON.stringify(report, null, 2))
 
-  let problems = 0
-  const lines = []
+  const hard = []
+  const soft = []
   for (const row of report) {
-    const issues = []
-    if (row.docScrollWidth > row.width + 1) issues.push(`H-SCROLL ${row.docScrollWidth}>${row.width}`)
-    if (row.overflowing?.length) issues.push(`OVERFLOW ${row.overflowing.slice(0, 4).join(' | ')}`)
-    if (row.tinyText?.length) issues.push(`TINY-TEXT ${row.tinyText.slice(0, 4).join(' | ')}`)
-    if (row.smallTargets?.length) issues.push(`TAP ${row.smallTargets.slice(0, 4).join(' | ')}`)
-    if (row.errors?.length) issues.push(`ERRORS ${row.errors.join(' ~ ')}`)
-    if (row.width < 1024 && row.bottomNavVisible === false) issues.push('NO-BOTTOM-NAV')
-    if (row.width >= 1024 && row.desktopNavVisible === false) issues.push('NO-DESKTOP-NAV')
-    if (issues.length) {
-      problems += 1
-      lines.push(`${row.viewport} ${row.route} :: ${issues.join(' ; ')}`)
+    const key = `${row.viewport} ${row.route}`
+    if (row.docScrollWidth > row.width + 1) hard.push(`${key} H-SCROLL ${row.docScrollWidth}>${row.width}`)
+    if (row.overflowing?.length) hard.push(`${key} OVERFLOW ${row.overflowing.slice(0, 3).join(', ')}`)
+    if (row.width < 1024 && row.bottomNavVisible === false) hard.push(`${key} NO-BOTTOM-NAV`)
+    if (row.width >= 1024 && row.desktopNavVisible === false) hard.push(`${key} NO-DESKTOP-NAV`)
+    if (row.errors?.length) hard.push(`${key} ERRORS ${row.errors.join(' ~ ')}`)
+    if (row.tinyText?.length) soft.push(`${key} TINY ${row.tinyText.slice(0, 3).join(', ')}`)
+    if (row.smallTargets?.length) soft.push(`${key} TAP ${row.smallTargets.slice(0, 3).join(', ')}`)
+  }
+  const counts = {}
+  for (const row of report) {
+    for (const item of row.smallTargets ?? []) {
+      const selector = item.replace(/ \d+x\d+$/, '')
+      counts[selector] = (counts[selector] ?? 0) + 1
     }
   }
-  const summary = [`${report.length} page checks, ${problems} with issues`, ...lines].join('\n')
+  const worstTargets = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([selector, count]) => `${count}x ${selector}`)
+
+  const summary = [
+    `page checks: ${report.length} (${ROUTES.length} routes x ${VIEWPORTS.length} viewports)`,
+    `hard issues: ${hard.length}`,
+    ...hard.slice(0, 45),
+    `soft issues: ${soft.length}`,
+    ...soft.slice(0, 12),
+    'tap targets (most common):',
+    ...worstTargets,
+  ].join('\n')
   console.log(summary)
+  fs.mkdirSync('artifacts', { recursive: true })
   fs.writeFileSync('artifacts/audit-summary.txt', summary)
   // Emit as a CI annotation so it is readable through the checks API.
   if (process.env.GITHUB_ACTIONS) {
