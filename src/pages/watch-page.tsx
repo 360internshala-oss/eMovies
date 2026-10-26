@@ -116,7 +116,7 @@ export function WatchPage() {
       <div className="mb-2 hidden items-center gap-2 px-4 md:flex">
         <Link
           to={titlePath(detailPath)}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+          className="inline-flex min-h-8 items-center gap-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to details
         </Link>
