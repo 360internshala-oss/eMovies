@@ -3,7 +3,7 @@ name: media-probe (temporary)
 on:
   push:
     branches: [arena/3d841a48-emovies]
-    paths: ['.github/probe/**']
+    paths: ['.github/workflows/media-probe.yml']
   workflow_dispatch:
 
 permissions:
