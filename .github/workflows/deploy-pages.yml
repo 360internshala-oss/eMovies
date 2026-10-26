@@ -156,34 +156,35 @@ jobs:
         run: |
           site="${{ needs.deploy.outputs.page_url }}"
           site="${site%/}"
+          # GitHub Pages' CDN keeps serving the previous index.html for a few
+          # minutes after a deployment, which would make us probe a stale bundle
+          # whose hashed asset no longer exists. A unique query string forces an
+          # origin fetch, so we validate what was actually deployed.
+          bust="v=$(date +%s%N)"
           asset_ok=""
           deep_ok=""
           for attempt in 1 2 3 4 5 6; do
-            index="$(curl -sS "$site/")"
+            index="$(curl -sS "$site/?$bust-$attempt")"
             asset="$(printf '%s' "$index" | grep -o 'src="[^"]*\.js"' | head -1 | cut -d'"' -f2)"
-            asset_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site$asset")"
+            asset_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site$asset?$bust-$attempt")"
             # GitHub Pages answers unknown paths with 404.html while still
             # serving the SPA shell, so the deep link is validated by body.
-            deep_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site/title/lucifer-UQASHYbVPB2")"
-            deep="$(curl -sS "$site/title/lucifer-UQASHYbVPB2")"
+            deep_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site/title/lucifer-UQASHYbVPB2?$bust-$attempt")"
+            deep="$(curl -sS "$site/title/lucifer-UQASHYbVPB2?$bust-$attempt")"
             if printf '%s' "$deep" | grep -q 'eMovies'; then deep_ok="yes"; else deep_ok="no"; fi
             if [ "$asset_code" = "200" ] && [ "$deep_ok" = "yes" ]; then asset_ok="yes"; break; fi
-            # New deployments propagate through the CDN in a few seconds.
             sleep 10
           done
+          root_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site/")"
           {
             echo "site: $site"
-            echo "root: $(curl -sS -o /dev/null -w '%{http_code}' "$site/")"
+            echo "root: $root_code"
             echo "asset path: $asset"
             echo "asset: $asset_code (attempts: $attempt)"
             echo "deep link: $deep_code (body serves the SPA shell: $deep_ok)"
           } | tee smoke.txt
 
-          if [ "$deep_ok" != "yes" ]; then
-            echo "::error::$(tr '\n' ' ' < smoke.txt)"
-            exit 1
-          fi
-          if [ "$asset_ok" != "yes" ]; then
+          if [ "$root_code" != "200" ] || [ "$asset_ok" != "yes" ] || [ "$deep_ok" != "yes" ]; then
             echo "::error::$(tr '\n' ' ' < smoke.txt)"
             exit 1
           fi
