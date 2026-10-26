@@ -9,19 +9,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: arena/9005430d-emovies
-      - name: Probe upstream CORS headers
+      - name: Probe media + subtitles
         run: |
+          set -x
+          PLAY=$(curl -s "https://filmy-flow-api.vercel.app/play?subjectId=2190807691784770592&detailPath=lucifer-UQASHYbVPB2&se=1&ep=1")
+          echo "$PLAY" > play.json
+          MP4=$(python3 -c "import json;d=json.load(open('play.json'));print(d['streams'][2]['url']);print(d['streams'][2]['id'], file=open('streamid.txt','w'))")
+          SID=$(python3 -c "import json;d=json.load(open('play.json'));print(d['streams'][2]['id'])")
+          CAP=$(curl -s "https://filmy-flow-api.vercel.app/caption?id=$SID&subjectId=2190807691784770592&detailPath=lucifer-UQASHYbVPB2&format=MP4")
+          echo "$CAP" > cap.json
+          SUBURL=$(python3 -c "import json;d=json.load(open('cap.json'));c=d['data']['captions'];print(c[2]['url'])")
           {
-          echo "=== GET /health with Origin ==="
-          curl -s -D - -o /dev/null -H "Origin: https://example.com" "https://filmy-flow-api.vercel.app/health"
-          echo "=== GET /movies with Origin ==="
-          curl -s -D - -o /dev/null -H "Origin: https://example.com" "https://filmy-flow-api.vercel.app/movies?page=1&perPage=1"
-          echo "=== OPTIONS preflight /movies ==="
-          curl -s -D - -o /dev/null -X OPTIONS -H "Origin: https://example.com" -H "Access-Control-Request-Method: GET" "https://filmy-flow-api.vercel.app/movies"
-          echo "=== /stream proxy with Range ==="
-          curl -s -D - -o /dev/null -H "Range: bytes=0-1023" "https://filmy-flow-api.vercel.app/stream?u=https%3A%2F%2Fbcdnxw.hakunaymatata.com%2Fbt%2F967b5518362ae6dadfbbbea47019e1e1.mp4"
-          echo "=== /stream proxy on a subtitle URL ==="
-          curl -s -D - -o /dev/null "https://filmy-flow-api.vercel.app/stream?u=https%3A%2F%2Fcacdn.hakunaymatata.com%2Fsubtitle%2F09ca65305751fcfea24b5d7b5790a557.srt"
+          echo "=== caption count: $(python3 -c "import json;d=json.load(open('cap.json'));print(len(d['data']['captions']))") ==="
+          echo "=== MP4 direct: HEAD with Origin+Referer ==="
+          curl -s -D - -o /dev/null -H "Origin: https://example.com" -H "Referer: https://example.com/" "$MP4" | head -20
+          echo "=== MP4 direct: range request with Origin ==="
+          curl -s -D - -o /dev/null -H "Origin: https://example.com" -H "Range: bytes=0-1023" "$MP4" | head -20
+          echo "=== MP4 via /stream proxy (no range) ==="
+          curl -s -m 25 -D - -o /dev/null "https://filmy-flow-api.vercel.app/stream?u=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=''))" "$MP4")" | head -20
+          echo "=== subtitle direct: headers with Origin ==="
+          curl -s -m 20 -D - -o sub.srt -H "Origin: https://example.com" "$SUBURL" | head -20
+          echo "--- subtitle body head ---"
+          head -c 240 sub.srt
+          echo ""
+          echo "=== subtitle via /stream proxy ==="
+          curl -s -m 25 -D - -o sub-proxy.txt "https://filmy-flow-api.vercel.app/stream?u=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=''))" "$SUBURL")" | head -20
+          echo "--- proxied subtitle body head ---"
+          head -c 240 sub-proxy.txt
           } > cors-probe.txt 2>&1
           cat cors-probe.txt
       - name: Commit results
@@ -29,5 +43,5 @@ jobs:
           git config user.name "cors-probe"
           git config user.email "probe@local"
           git add cors-probe.txt
-          git commit -m "chore: cors probe output" || true
+          git commit -m "chore: media probe output" || true
           git push
