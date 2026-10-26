@@ -1,0 +1,4 @@
+page checks: 84 (21 routes x 4 viewports)
+hard issues: 0
+soft issues: 0
+tap targets (most common):
