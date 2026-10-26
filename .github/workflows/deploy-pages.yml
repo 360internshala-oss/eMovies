@@ -168,6 +168,17 @@ jobs:
             printf '%s' "$deep" | grep -q 'eMovies' && echo "deep link serves the SPA shell: yes" || echo "deep link serves the SPA shell: NO"
           } | tee smoke.txt
 
+          # Surface the result where it can always be read, and fail loudly.
+          if ! grep -q 'deep link serves the SPA shell: yes' smoke.txt; then
+            echo "::error::$(tr '\n' ' ' < smoke.txt)"
+            exit 1
+          fi
+          if ! grep -qE 'asset: 200' smoke.txt || ! grep -qE 'deep link: 200' smoke.txt; then
+            echo "::error::$(tr '\n' ' ' < smoke.txt)"
+            exit 1
+          fi
+          echo "::notice::$(tr '\n' ' ' < smoke.txt)"
+
       - name: Upload probe output
         uses: actions/upload-artifact@v4
         with:
