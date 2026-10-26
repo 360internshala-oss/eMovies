@@ -156,24 +156,34 @@ jobs:
         run: |
           site="${{ needs.deploy.outputs.page_url }}"
           site="${site%/}"
+          asset_ok=""
+          deep_ok=""
+          for attempt in 1 2 3 4 5 6; do
+            index="$(curl -sS "$site/")"
+            asset="$(printf '%s' "$index" | grep -o 'src="[^"]*\.js"' | head -1 | cut -d'"' -f2)"
+            asset_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site$asset")"
+            # GitHub Pages answers unknown paths with 404.html while still
+            # serving the SPA shell, so the deep link is validated by body.
+            deep_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site/title/lucifer-UQASHYbVPB2")"
+            deep="$(curl -sS "$site/title/lucifer-UQASHYbVPB2")"
+            if printf '%s' "$deep" | grep -q 'eMovies'; then deep_ok="yes"; else deep_ok="no"; fi
+            if [ "$asset_code" = "200" ] && [ "$deep_ok" = "yes" ]; then asset_ok="yes"; break; fi
+            # New deployments propagate through the CDN in a few seconds.
+            sleep 10
+          done
           {
             echo "site: $site"
             echo "root: $(curl -sS -o /dev/null -w '%{http_code}' "$site/")"
-            index="$(curl -sS "$site/")"
-            asset="$(printf '%s' "$index" | grep -o 'src="[^"]*\.js"' | head -1 | cut -d'"' -f2)"
             echo "asset path: $asset"
-            echo "asset: $(curl -sS -o /dev/null -w '%{http_code}' "$site$asset")"
-            echo "deep link: $(curl -sS -o /dev/null -w '%{http_code}' "$site/title/lucifer-UQASHYbVPB2")"
-            deep="$(curl -sS "$site/title/lucifer-UQASHYbVPB2")"
-            printf '%s' "$deep" | grep -q 'eMovies' && echo "deep link serves the SPA shell: yes" || echo "deep link serves the SPA shell: NO"
+            echo "asset: $asset_code (attempts: $attempt)"
+            echo "deep link: $deep_code (body serves the SPA shell: $deep_ok)"
           } | tee smoke.txt
 
-          # Surface the result where it can always be read, and fail loudly.
-          if ! grep -q 'deep link serves the SPA shell: yes' smoke.txt; then
+          if [ "$deep_ok" != "yes" ]; then
             echo "::error::$(tr '\n' ' ' < smoke.txt)"
             exit 1
           fi
-          if ! grep -qE 'asset: 200' smoke.txt || ! grep -qE 'deep link: 200' smoke.txt; then
+          if [ "$asset_ok" != "yes" ]; then
             echo "::error::$(tr '\n' ' ' < smoke.txt)"
             exit 1
           fi
