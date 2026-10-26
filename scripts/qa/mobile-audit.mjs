@@ -95,12 +95,13 @@ const AUDIT = () => {
   }
   const rect = (el) => el.getBoundingClientRect()
 
-  // Scrollable containers are allowed to be wider than the viewport.
+  // Elements inside a scroll container or a clipping ancestor (e.g. the hero's
+  // overflow-hidden stage with its parallax scale) cannot widen the page.
   const inScroller = (el) => {
     let node = el.parentElement
     while (node && node !== document.body) {
       const style = getComputedStyle(node)
-      if (/auto|scroll/.test(style.overflowX)) return true
+      if (/auto|scroll|hidden|clip/.test(style.overflowX)) return true
       node = node.parentElement
     }
     return false

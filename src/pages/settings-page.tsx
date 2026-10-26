@@ -164,7 +164,7 @@ export function SettingsPage() {
         <p className="text-xs leading-relaxed text-muted-foreground">
           eMovies runs entirely in the browser and talks to the public Filmy Flow API. It hosts no media, keeps no account and stores no
           credentials. Not every streaming feature can exist without the matching API data — see the{' '}
-          <Link to="/capabilities" className="text-primary hover:underline">
+          <Link to="/capabilities" className="inline-flex min-h-7 items-center text-primary hover:underline">
             capability map
           </Link>
           .

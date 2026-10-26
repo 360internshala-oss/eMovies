@@ -38,7 +38,7 @@ export function CapabilitiesPage() {
       <div className="mb-6 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p>
-          Upstream: <a className="text-primary hover:underline" href={APP.apiBaseUrl} target="_blank" rel="noreferrer noopener">{APP.apiBaseUrl}</a>. eMovies never
+          Upstream: <a className="inline-flex min-h-7 items-center text-primary hover:underline" href={APP.apiBaseUrl} target="_blank" rel="noreferrer noopener">{APP.apiBaseUrl}</a>. eMovies never
           fabricates quality levels, subtitle tracks, dubs, episodes or providers. Unsupported controls are hidden rather than mocked.
         </p>
       </div>
@@ -115,7 +115,7 @@ export function CapabilitiesPage() {
         </p>
         <p>
           Read the full write-up in <code>docs/API_CAPABILITIES.md</code>, or head back to the{' '}
-          <Link to="/" className="text-primary hover:underline">
+          <Link to="/" className="inline-flex min-h-7 items-center text-primary hover:underline">
             home page
           </Link>
           .

@@ -34,7 +34,7 @@ export function SeekBar({ currentTime, duration, buffered, onSeek, onScrub, clas
   )
 
   return (
-    <div className={cn('group/seek relative flex h-6 items-center', className)}>
+    <div className={cn('group/seek relative flex h-8 items-center sm:h-6', className)}>
       <div
         ref={trackRef}
         className="relative h-1.5 w-full cursor-pointer rounded-full bg-white/25 transition-[height] group-hover/seek:h-2"
@@ -60,32 +60,34 @@ export function SeekBar({ currentTime, duration, buffered, onSeek, onScrub, clas
           </span>
         ) : null}
 
-        <input
-          type="range"
-          min={0}
-          max={Math.max(1, Math.floor(duration))}
-          step={1}
-          value={Math.floor(currentTime)}
-          aria-label="Seek"
-          aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
-          onPointerDown={() => {
-            setDragging(true)
-            onScrub(true)
-          }}
-          onPointerUp={() => {
-            setDragging(false)
-            onScrub(false)
-          }}
-          onChange={(event) => onSeek(Number(event.target.value))}
-          onKeyDown={(event) => {
-            if (event.key === 'ArrowRight') onSeek(Math.min(duration, currentTime + 5))
-            if (event.key === 'ArrowLeft') onSeek(Math.max(0, currentTime - 5))
-            if (event.key === 'Home') onSeek(0)
-            if (event.key === 'End') onSeek(duration)
-          }}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-        />
       </div>
+
+      {/* Real range input, full-height so touch users get a comfortable target. */}
+      <input
+        type="range"
+        min={0}
+        max={Math.max(1, Math.floor(duration))}
+        step={1}
+        value={Math.floor(currentTime)}
+        aria-label="Seek"
+        aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+        onPointerDown={() => {
+          setDragging(true)
+          onScrub(true)
+        }}
+        onPointerUp={() => {
+          setDragging(false)
+          onScrub(false)
+        }}
+        onChange={(event) => onSeek(Number(event.target.value))}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowRight') onSeek(Math.min(duration, currentTime + 5))
+          if (event.key === 'ArrowLeft') onSeek(Math.max(0, currentTime - 5))
+          if (event.key === 'Home') onSeek(0)
+          if (event.key === 'End') onSeek(duration)
+        }}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
     </div>
   )
 }

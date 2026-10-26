@@ -128,7 +128,7 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
               <Link
                 key={genre}
                 to={`/genres/${encodeURIComponent(genre.toLowerCase())}`}
-                className="rounded-full border border-border/80 px-2 py-0.5 transition hover:border-primary/60 hover:text-primary"
+                className="inline-flex min-h-7 items-center rounded-full border border-border/80 px-2.5 transition hover:border-primary/60 hover:text-primary"
               >
                 {genre}
               </Link>
@@ -187,7 +187,7 @@ export function HeroBanner({ items, artwork }: HeroBannerProps) {
                   aria-selected={slideIndex === index}
                   aria-label={`Show ${slide.title}`}
                   onClick={() => setIndex(slideIndex)}
-                  className="group flex h-9 items-center rounded-full px-1 focus-ring"
+                  className="group flex h-9 min-w-8 items-center justify-center rounded-full px-1 focus-ring"
                 >
                   <span
                     className={cn(

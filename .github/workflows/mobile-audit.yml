@@ -37,3 +37,15 @@ jobs:
           name: mobile-screens
           path: artifacts
           if-no-files-found: warn
+
+      # Artifact downloads are blocked from the review environment, so the
+      # phone/desktop screenshots are pushed back onto the branch instead.
+      - name: Publish screenshots to the branch
+        if: always()
+        continue-on-error: true
+        run: |
+          git config user.name "emovies-qa"
+          git config user.email "qa@example.invalid"
+          git add artifacts
+          git commit -m "chore: mobile audit screenshots [skip ci]" || echo "nothing to commit"
+          git push origin HEAD:${{ github.ref_name }}
