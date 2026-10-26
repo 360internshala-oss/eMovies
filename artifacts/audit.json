@@ -35,7 +35,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1030
+    "textLength": 1041
   },
   {
     "viewport": "xs-320",
@@ -111,7 +111,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1095
+    "textLength": 1106
   },
   {
     "viewport": "xs-320",
@@ -130,7 +130,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1103
+    "textLength": 1114
   },
   {
     "viewport": "xs-320",
@@ -835,7 +835,7 @@
     "bottomNavVisible": true,
     "desktopNavVisible": false,
     "hasMain": true,
-    "textLength": 1140
+    "textLength": 1151
   },
   {
     "viewport": "tablet-768",
@@ -1310,7 +1310,7 @@
     "bottomNavVisible": false,
     "desktopNavVisible": true,
     "hasMain": true,
-    "textLength": 1259
+    "textLength": 1248
   },
   {
     "viewport": "desktop-1440",
