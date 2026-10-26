@@ -71,8 +71,12 @@ jobs:
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
 
+      # `enablement: true` creates the Pages site (build type: "GitHub Actions")
+      # on the first run, so no manual Settings step is required.
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
