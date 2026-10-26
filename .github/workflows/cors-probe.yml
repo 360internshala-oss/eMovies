@@ -1,0 +1,16 @@
+name: cors-probe
+on: [push, workflow_dispatch]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe upstream CORS headers
+        run: |
+          echo "=== with Origin ==="
+          curl -s -D - -o /dev/null -H "Origin: https://example.com" "https://filmy-flow-api.vercel.app/health"
+          echo "=== preflight ==="
+          curl -s -D - -o /dev/null -X OPTIONS -H "Origin: https://example.com" -H "Access-Control-Request-Method: GET" "https://filmy-flow-api.vercel.app/movies"
+          echo "=== caption content-type ==="
+          curl -s -D - -o /dev/null -H "Origin: https://example.com" "https://filmy-flow-api.vercel.app/movies?page=1&perPage=1"
+          echo "=== stream proxy range support ==="
+          curl -s -D - -o /dev/null -H "Range: bytes=0-1023" "https://filmy-flow-api.vercel.app/stream?u=https%3A%2F%2Fbcdnxw.hakunaymatata.com%2Fbt%2F967b5518362ae6dadfbbbea47019e1e1.mp4"
