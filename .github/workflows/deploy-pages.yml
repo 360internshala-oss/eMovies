@@ -156,6 +156,11 @@ jobs:
         run: |
           site="${{ needs.deploy.outputs.page_url }}"
           site="${site%/}"
+          # `page_url` already ends with the project path (/eMovies), while the
+          # asset URLs inside index.html are absolute from the domain root
+          # (/eMovies/assets/x.js) — resolve them against the origin, never
+          # against page_url, or the base path is applied twice.
+          origin="$(printf '%s' "$site" | sed -E 's#(https://[^/]+).*#\1#')"
           # GitHub Pages' CDN keeps serving the previous index.html for a few
           # minutes after a deployment, which would make us probe a stale bundle
           # whose hashed asset no longer exists. A unique query string forces an
@@ -166,7 +171,7 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             index="$(curl -sS "$site/?$bust-$attempt")"
             asset="$(printf '%s' "$index" | grep -o 'src="[^"]*\.js"' | head -1 | cut -d'"' -f2)"
-            asset_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site$asset?$bust-$attempt")"
+            asset_code="$(curl -sS -o /dev/null -w '%{http_code}' "$origin$asset?$bust-$attempt")"
             # GitHub Pages answers unknown paths with 404.html while still
             # serving the SPA shell, so the deep link is validated by body.
             deep_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site/title/lucifer-UQASHYbVPB2?$bust-$attempt")"
@@ -178,6 +183,7 @@ jobs:
           root_code="$(curl -sS -o /dev/null -w '%{http_code}' "$site/")"
           {
             echo "site: $site"
+            echo "origin: $origin"
             echo "root: $root_code"
             echo "asset path: $asset"
             echo "asset: $asset_code (attempts: $attempt)"
