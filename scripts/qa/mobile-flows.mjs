@@ -247,11 +247,18 @@ async function run() {
         const dialog = document.querySelector('[role="dialog"]')
         return { open: Boolean(dialog), text: (dialog?.textContent ?? '').slice(0, 120) }
       })
+      // Wider screens keep the inline control-bar menus instead of the sheet.
+      const inlineMenus = await page.evaluate(() =>
+        ['Playback quality', 'Playback speed', 'Subtitles'].every((label) =>
+          [...document.querySelectorAll('button')].some((button) => button.getAttribute('aria-label')?.startsWith(label)),
+        ),
+      )
+      const ok = errorPanel ? false : hasSettings ? sheet.open : inlineMenus
       record(
         viewport.name,
-        'player settings sheet (touch UI)',
-        hasSettings && sheet.open,
-        `button=${hasSettings} sheet=${sheet.open} errorPanel=${errorPanel}`,
+        hasSettings ? 'player settings sheet (touch UI)' : 'player inline menus (wide UI)',
+        ok,
+        `settingsButton=${hasSettings} sheet=${sheet.open} inlineMenus=${inlineMenus} errorPanel=${errorPanel}`,
       )
     } catch (error) {
       record(viewport.name, 'player settings sheet (touch UI)', false, String(error.message).slice(0, 120))

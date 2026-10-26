@@ -33,7 +33,9 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
     <header
       className={cn(
         'fixed inset-x-0 top-0 z-50 transition-all duration-300',
-        scrolled ? 'glass border-b border-border/60' : 'bg-gradient-to-b from-black/70 to-transparent',
+        scrolled
+          ? 'glass border-b border-border/60'
+          : 'bg-gradient-to-b from-background via-background/80 to-transparent dark:from-black/75 dark:via-black/35',
       )}
     >
       <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-4 lg:px-8">
