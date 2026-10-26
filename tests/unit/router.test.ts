@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildPath, parseLocation, titlePath, watchPath } from '@/router/routes'
+import { joinBase, normalizeBase, splitBase } from '@/router/base'
 
 describe('parseLocation', () => {
   it('resolves every primary route', () => {
@@ -58,5 +59,49 @@ describe('buildPath', () => {
     expect(watchPath('movie-abc')).toBe('/watch/movie-abc')
     expect(watchPath('movie-abc', { season: 0, episode: 0 })).toBe('/watch/movie-abc')
     expect(watchPath('show-abc', { season: 2, episode: 7 })).toBe('/watch/show-abc?se=2&ep=7')
+  })
+})
+
+
+describe('deployment base path (GitHub Pages project site)', () => {
+  it('normalises every base shape the workflow can pass', () => {
+    expect(normalizeBase(undefined)).toBe('')
+    expect(normalizeBase('/')).toBe('')
+    expect(normalizeBase('')).toBe('')
+    expect(normalizeBase('eMovies')).toBe('/eMovies')
+    expect(normalizeBase('/eMovies/')).toBe('/eMovies')
+    expect(normalizeBase('//eMovies//')).toBe('/eMovies')
+  })
+
+  it('prefixes app paths with the base exactly once', () => {
+    expect(joinBase('/eMovies/', '/movies')).toBe('/eMovies/movies')
+    expect(joinBase('/eMovies/', '/movies?page=2')).toBe('/eMovies/movies?page=2')
+    expect(joinBase('/eMovies/', '/')).toBe('/eMovies/')
+    expect(joinBase('/eMovies/', '/eMovies/movies')).toBe('/eMovies/movies')
+    expect(joinBase('/eMovies/', 'movies')).toBe('/eMovies/movies')
+    expect(joinBase('/', '/movies')).toBe('/movies')
+  })
+
+  it('keeps a base that merely shares a prefix intact', () => {
+    // `/eMoviesArchive` is not inside `/eMovies` and must not be stripped.
+    expect(splitBase('/eMovies/', '/eMoviesArchive/movies')).toBe('/eMoviesArchive/movies')
+    expect(joinBase('/eMovies/', '/eMoviesArchive')).toBe('/eMovies/eMoviesArchive')
+  })
+
+  it('round-trips a deep link through base and back to a matching route', () => {
+    const appPath = titlePath('lucifer-UQASHYbVPB2')
+    const deployed = joinBase('/eMovies/', appPath)
+    expect(deployed).toBe('/eMovies/title/lucifer-UQASHYbVPB2')
+    const match = parseLocation(splitBase('/eMovies/', deployed))
+    expect(match.name).toBe('title')
+    expect(match.params.detailPath).toBe('lucifer-UQASHYbVPB2')
+  })
+
+  it('strips the base from the project root and unknown paths', () => {
+    expect(splitBase('/eMovies/', '/eMovies')).toBe('/')
+    expect(splitBase('/eMovies/', '/eMovies/')).toBe('/')
+    expect(splitBase('/eMovies/', '/eMovies/watch/lucifer-UQASHYbVPB2?se=1&ep=2')).toBe('/watch/lucifer-UQASHYbVPB2?se=1&ep=2')
+    expect(splitBase('/eMovies/', '/nope')).toBe('/nope')
+    expect(splitBase('/', '/movies')).toBe('/movies')
   })
 })

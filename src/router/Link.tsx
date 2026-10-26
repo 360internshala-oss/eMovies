@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from 'react'
 import { useRouter } from './RouterProvider'
+import { withBase } from './base'
 import { cn } from '@/utils/cn'
 
 interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
@@ -27,7 +28,7 @@ export function Link({ to, children, className, onClick, keepScroll, replace, ..
   }
 
   return (
-    <a href={to} onClick={handleClick} className={cn(className)} {...rest}>
+    <a href={withBase(to)} onClick={handleClick} className={cn(className)} {...rest}>
       {children}
     </a>
   )

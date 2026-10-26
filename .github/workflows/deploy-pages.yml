@@ -1,0 +1,127 @@
+name: Deploy to GitHub Pages
+
+# Builds the static SPA and publishes it to GitHub Pages.
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+#
+# The site is served from https://<owner>.github.io/<repo>/, so the build is
+# produced with VITE_BASE_PATH=/<repo>/ and the router strips that base from
+# the address bar (see src/router/base.ts).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two Pages deployments at once; queue the newest instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build static site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit + integration tests
+        run: npm test
+
+      - name: Resolve Pages base path
+        id: base
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          if [[ "$repo" == *.github.io ]]; then
+            base="/"
+          else
+            base="/$repo/"
+          fi
+          echo "path=$base" >> "$GITHUB_OUTPUT"
+          echo "Deploying to base path: $base"
+
+      - name: Build
+        env:
+          VITE_BASE_PATH: ${{ steps.base.outputs.path }}
+          VITE_API_BASE_URL: https://filmy-flow-api.vercel.app
+        run: npm run build
+
+      # GitHub Pages answers unknown paths with 404.html. Shipping a copy of the
+      # SPA shell makes deep links (/title/..., /watch/...) work: the app boots
+      # and resolves the route from the address bar, base path included.
+      - name: Add SPA fallback and .nojekyll
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+
+      # `enablement: true` creates the Pages site (build type: "GitHub Actions")
+      # on the first run, so no manual Settings step is required.
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Post-deploy smoke test: proves the published site actually serves the app
+  # shell, its hashed assets and a deep link through the 404.html fallback.
+  smoke:
+    name: Smoke-test the published site
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe the live site
+        run: |
+          site="${{ needs.deploy.outputs.page_url }}"
+          site="${site%/}"
+          {
+            echo "site: $site"
+            echo "root: $(curl -sS -o /dev/null -w '%{http_code}' "$site/")"
+            index="$(curl -sS "$site/")"
+            asset="$(printf '%s' "$index" | grep -o 'src="[^"]*\.js"' | head -1 | cut -d'"' -f2)"
+            echo "asset path: $asset"
+            echo "asset: $(curl -sS -o /dev/null -w '%{http_code}' "$site$asset")"
+            echo "deep link: $(curl -sS -o /dev/null -w '%{http_code}' "$site/title/lucifer-UQASHYbVPB2")"
+            deep="$(curl -sS "$site/title/lucifer-UQASHYbVPB2")"
+            printf '%s' "$deep" | grep -q 'eMovies' && echo "deep link serves the SPA shell: yes" || echo "deep link serves the SPA shell: NO"
+          } | tee smoke.txt
+
+      - name: Upload probe output
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-smoke
+          path: smoke.txt
