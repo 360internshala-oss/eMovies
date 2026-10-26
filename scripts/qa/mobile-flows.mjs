@@ -35,6 +35,44 @@ function loadFixtures() {
   return require(out)
 }
 
+/**
+ * Headless Chrome in CI has no H.264 decoder and we cannot ship a real media
+ * file, so the <video> element is stubbed: it reports metadata and "plays"
+ * without decoding. This exercises the *UI* (controls, sheets, error paths);
+ * it is not a codec test — real decoding is verified manually in a browser.
+ */
+async function stubMedia(page) {
+  await page.evaluateOnNewDocument(() => {
+    const proto = HTMLMediaElement.prototype
+    Object.defineProperty(proto, 'readyState', { get: () => 4, configurable: true })
+    Object.defineProperty(proto, 'duration', { get: () => 2700, configurable: true })
+    Object.defineProperty(proto, 'paused', { get: () => !window.__playing, configurable: true })
+    Object.defineProperty(proto, 'currentTime', {
+      get: () => window.__time ?? 0,
+      set: (value) => {
+        window.__time = value
+      },
+      configurable: true,
+    })
+    Object.defineProperty(proto, 'buffered', { get: () => ({ length: 1, end: () => 1200 }), configurable: true })
+    proto.load = function load() {
+      setTimeout(() => this.dispatchEvent(new Event('loadedmetadata')), 0)
+    }
+    proto.play = function play() {
+      window.__playing = true
+      setTimeout(() => {
+        this.dispatchEvent(new Event('play'))
+        this.dispatchEvent(new Event('playing'))
+      }, 0)
+      return Promise.resolve()
+    }
+    proto.pause = function pause() {
+      window.__playing = false
+      this.dispatchEvent(new Event('pause'))
+    }
+  })
+}
+
 async function setup(page, fixtures) {
   await page.setRequestInterception(true)
   page.on('request', (req) => {
@@ -90,6 +128,7 @@ async function run() {
   for (const viewport of VIEWPORTS) {
     const page = await browser.newPage()
     await page.setViewport(viewport)
+    await stubMedia(page)
     await setup(page, fixtures)
     const consoleErrors = []
     page.on('pageerror', (error) => consoleErrors.push(String(error.message).slice(0, 160)))
