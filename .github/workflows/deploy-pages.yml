@@ -42,8 +42,29 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      # Results are captured as an artifact so failures are diagnosable even
+      # when the runner's log stream is unavailable.
       - name: Unit + integration tests
-        run: npm test
+        id: tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          mkdir -p test-results
+          npm test -- --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml 2>&1 | tee test-results/vitest.txt
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-report
+          path: test-results
+          if-no-files-found: warn
+
+      - name: Fail on test failures
+        if: steps.tests.outcome == 'failure'
+        run: |
+          echo "Tests failed — see the vitest-report artifact."
+          exit 1
 
       - name: Resolve Pages base path
         id: base

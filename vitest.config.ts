@@ -10,5 +10,9 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     setupFiles: ['tests/setup.ts'],
     reporters: 'default',
+    // CI runners are slower than a dev laptop; keep the gates meaningful but
+    // not machine-sensitive.
+    testTimeout: 20000,
+    hookTimeout: 20000,
   },
 })
