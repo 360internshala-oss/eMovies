@@ -1,16 +1,33 @@
 name: cors-probe
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/9005430d-emovies
       - name: Probe upstream CORS headers
         run: |
-          echo "=== with Origin ==="
+          {
+          echo "=== GET /health with Origin ==="
           curl -s -D - -o /dev/null -H "Origin: https://example.com" "https://filmy-flow-api.vercel.app/health"
-          echo "=== preflight ==="
-          curl -s -D - -o /dev/null -X OPTIONS -H "Origin: https://example.com" -H "Access-Control-Request-Method: GET" "https://filmy-flow-api.vercel.app/movies"
-          echo "=== caption content-type ==="
+          echo "=== GET /movies with Origin ==="
           curl -s -D - -o /dev/null -H "Origin: https://example.com" "https://filmy-flow-api.vercel.app/movies?page=1&perPage=1"
-          echo "=== stream proxy range support ==="
+          echo "=== OPTIONS preflight /movies ==="
+          curl -s -D - -o /dev/null -X OPTIONS -H "Origin: https://example.com" -H "Access-Control-Request-Method: GET" "https://filmy-flow-api.vercel.app/movies"
+          echo "=== /stream proxy with Range ==="
           curl -s -D - -o /dev/null -H "Range: bytes=0-1023" "https://filmy-flow-api.vercel.app/stream?u=https%3A%2F%2Fbcdnxw.hakunaymatata.com%2Fbt%2F967b5518362ae6dadfbbbea47019e1e1.mp4"
+          echo "=== /stream proxy on a subtitle URL ==="
+          curl -s -D - -o /dev/null "https://filmy-flow-api.vercel.app/stream?u=https%3A%2F%2Fcacdn.hakunaymatata.com%2Fsubtitle%2F09ca65305751fcfea24b5d7b5790a557.srt"
+          } > cors-probe.txt 2>&1
+          cat cors-probe.txt
+      - name: Commit results
+        run: |
+          git config user.name "cors-probe"
+          git config user.email "probe@local"
+          git add cors-probe.txt
+          git commit -m "chore: cors probe output" || true
+          git push
