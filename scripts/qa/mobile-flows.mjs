@@ -92,10 +92,10 @@ async function setup(page, fixtures) {
       })
       return
     }
-    if (/\.mp4|\.mpd|\.m3u8/i.test(url)) {
-      // Pretend the CDN answered with a playable MP4 so the player chrome is
-      // shown instead of the error panel.
-      req.respond({ status: 206, contentType: 'video/mp4', body: '' }).catch(() => {})
+    if (/\.mp4|\.mpd|\.m3u8/i.test(url) || url.includes('/stream?u=')) {
+      // Hold media requests open: no bytes, so the element never errors while
+      // the stubbed HTMLMediaElement above reports a ready, playable video.
+      // This keeps the real control bar on screen for the UI assertions.
       return
     }
     if (/^https?:\/\/(?!127\.0\.0\.1|localhost)/.test(url)) {
@@ -193,7 +193,8 @@ async function run() {
 
     // ------------------------------------------------------------- C. search
     try {
-      await page.goto(`${APP_URL}/`, { waitUntil: 'networkidle2' })
+      await page.goto(`${APP_URL}/`, { waitUntil: 'domcontentloaded' })
+      await settle(1200)
       await settle()
       const searchButton = await page.$('nav[aria-label="Primary mobile navigation"] button[aria-label="Open search"]')
       await searchButton?.click()
@@ -232,8 +233,8 @@ async function run() {
 
     // ------------------------------------------------- E. player settings UI
     try {
-      await page.goto(`${APP_URL}/watch/colony-06FbDRS87x3`, { waitUntil: 'networkidle2' })
-      await settle(1500)
+      await page.goto(`${APP_URL}/watch/colony-06FbDRS87x3`, { waitUntil: 'domcontentloaded' })
+      await settle(2000)
       await page.screenshot({ path: path.join(SHOT_DIR, `${viewport.name}_player.png`) })
       const hasSettings = await page.evaluate(() => Boolean(document.querySelector('button[aria-label="Playback settings"]')))
       const errorPanel = await page.evaluate(() => Boolean(document.querySelector('[role="alert"]')))
