@@ -1,0 +1,87 @@
+name: media-probe (temporary)
+
+on:
+  push:
+    branches: [arena/3d841a48-emovies]
+    paths: ['.github/probe/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe /play and the media URLs
+        run: |
+          set -u
+          API="https://filmy-flow-api.vercel.app"
+          python3 - <<'PY'
+          import json, re, subprocess, urllib.parse
+
+          API = "https://filmy-flow-api.vercel.app"
+          out = []
+
+          def curl(args, timeout=25):
+              try:
+                  return subprocess.run(["curl", "-sS", "-m", str(timeout), *args],
+                                        capture_output=True, text=True).stdout
+              except Exception as exc:  # pragma: no cover
+                  return f"<error {exc}>"
+
+          def head(url, label):
+              r = subprocess.run(["curl", "-sS", "-o", "/dev/null", "-m", "25",
+                                  "-D", "-", url], capture_output=True, text=True)
+              hdrs = [l for l in r.stdout.splitlines()
+                      if re.match(r'^(HTTP/|content-type|content-length|content-range|access-control-allow-origin|location|accept-ranges|x-)', l, re.I)]
+              out.append(f"[{label}] {url[:110]}")
+              out.append("  " + " | ".join(h.strip() for h in hdrs[:8]))
+
+          cases = [
+              ("series", "2190807691784770592", "lucifer-UQASHYbVPB2", 1, 1),
+              ("series-noep", "2190807691784770592", "lucifer-UQASHYbVPB2", 0, 0),
+          ]
+
+          for name, sid, path, se, ep in cases:
+              q = urllib.parse.urlencode({"subjectId": sid, "detailPath": path, "se": se, "ep": ep})
+              body = curl([f"{API}/play?{q}"], 40)
+              try:
+                  data = json.loads(body)
+              except Exception:
+                  out.append(f"[{name}] /play not JSON: {body[:200]}")
+                  continue
+              streams = data.get("streams") or (data.get("upstream", {}).get("data") or {}).get("streams") or []
+              up = (data.get("upstream", {}).get("data") or {})
+              out.append(f"[{name}] streams={len(streams)} dash={len(up.get('dash') or [])} hls={len(up.get('hls') or [])} keys={sorted(data.keys())[:8]}")
+              for s in streams[:4]:
+                  out.append(f"  res={s.get('resolutions')} codec={s.get('codecName')} id={s.get('id')} size={s.get('size')}")
+                  out.append(f"    url={str(s.get('url'))[:200]}")
+                  out.append(f"    proxy={str(s.get('proxy_url'))[:160]}")
+              if streams:
+                  s = streams[-1]  # smallest rendition
+                  url = s.get("url") or ""
+                  head(url, "direct-mp4")
+                  head(url.replace("https://", "http://"), "direct-http")
+                  if s.get("proxy_url"):
+                      p = s["proxy_url"]
+                      head(p if p.startswith("http") else API + p, "api-proxy-url")
+              head(f"{API}/api/stream/{sid}", "api-stream-id")
+              head(f"{API}/stream?u={urllib.parse.quote('https://example.com/x.mp4', safe='')}", "api-stream-example")
+
+          text = "\n".join(out)
+          print("PROBE-START")
+          print(text)
+          print("PROBE-END")
+          esc = text.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+          print("::error::" + esc[:60000])
+          open("probe.txt", "w").write(text)
+          PY
+
+      - name: Upload probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: media-probe
+          path: probe.txt
+          if-no-files-found: warn
