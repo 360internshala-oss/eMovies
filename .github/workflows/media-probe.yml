@@ -23,56 +23,55 @@ jobs:
           API = "https://filmy-flow-api.vercel.app"
           out = []
 
-          def curl(args, timeout=25):
-              try:
-                  return subprocess.run(["curl", "-sS", "-m", str(timeout), *args],
-                                        capture_output=True, text=True).stdout
-              except Exception as exc:  # pragma: no cover
-                  return f"<error {exc}>"
+          def curl(args, timeout=30):
+              r = subprocess.run(["curl", "-sS", "-m", str(timeout), *args], capture_output=True, text=True)
+              return r.stdout
 
-          def head(url, label):
-              r = subprocess.run(["curl", "-sS", "-o", "/dev/null", "-m", "25",
-                                  "-D", "-", url], capture_output=True, text=True)
-              hdrs = [l for l in r.stdout.splitlines()
-                      if re.match(r'^(HTTP/|content-type|content-length|content-range|access-control-allow-origin|location|accept-ranges|x-)', l, re.I)]
-              out.append(f"[{label}] {url[:110]}")
-              out.append("  " + " | ".join(h.strip() for h in hdrs[:8]))
+          def head(url, label, extra=()):
+              r = subprocess.run(["curl", "-sS", "-o", "/dev/null", "-m", "30", "-D", "-", *extra, url],
+                                 capture_output=True, text=True)
+              hdrs = [l.strip() for l in r.stdout.splitlines() if re.match(r'^(HTTP/|content-type|content-length|access-control-allow-origin|location)', l, re.I)]
+              out.append(f"[{label}] {url[:120]}")
+              out.append("   " + " | ".join(hdrs[:6]) + f" | body={r.stdout.splitlines()[-1][:80] if r.stdout else ''}")
 
-          cases = [
-              ("series", "2190807691784770592", "lucifer-UQASHYbVPB2", 1, 1),
-              ("series-noep", "2190807691784770592", "lucifer-UQASHYbVPB2", 0, 0),
-          ]
+          q = urllib.parse.urlencode({"subjectId": "2190807691784770592", "detailPath": "lucifer-UQASHYbVPB2", "se": 1, "ep": 1})
+          body = curl([f"{API}/play?{q}"], 40)
+          data = json.loads(body)
 
-          for name, sid, path, se, ep in cases:
-              q = urllib.parse.urlencode({"subjectId": sid, "detailPath": path, "se": se, "ep": ep})
-              body = curl([f"{API}/play?{q}"], 40)
-              try:
-                  data = json.loads(body)
-              except Exception:
-                  out.append(f"[{name}] /play not JSON: {body[:200]}")
-                  continue
-              streams = data.get("streams") or (data.get("upstream", {}).get("data") or {}).get("streams") or []
-              up = (data.get("upstream", {}).get("data") or {})
-              out.append(f"[{name}] streams={len(streams)} dash={len(up.get('dash') or [])} hls={len(up.get('hls') or [])} keys={sorted(data.keys())[:8]}")
-              for s in streams[:4]:
-                  out.append(f"  res={s.get('resolutions')} codec={s.get('codecName')} id={s.get('id')} size={s.get('size')}")
-                  out.append(f"    url={str(s.get('url'))[:200]}")
-                  out.append(f"    proxy={str(s.get('proxy_url'))[:160]}")
-              if streams:
-                  s = streams[-1]  # smallest rendition
-                  url = s.get("url") or ""
-                  head(url, "direct-mp4")
-                  head(url.replace("https://", "http://"), "direct-http")
-                  if s.get("proxy_url"):
-                      p = s["proxy_url"]
-                      head(p if p.startswith("http") else API + p, "api-proxy-url")
-              head(f"{API}/api/stream/{sid}", "api-stream-id")
-              head(f"{API}/stream?u={urllib.parse.quote('https://example.com/x.mp4', safe='')}", "api-stream-example")
+          def shape(node, depth=0):
+              if depth > 3: return '...'
+              if isinstance(node, dict):
+                  return {k: shape(v, depth + 1) for k, v in list(node.items())[:24]}
+              if isinstance(node, list):
+                  return [shape(node[0], depth + 1)] if node else []
+              if isinstance(node, str):
+                  return node[:90]
+              return node
+
+          out.append("SHAPE " + json.dumps(shape(data))[:2500])
+          up = data.get("upstream", {}).get("data", {}) or {}
+          out.append("STREAM KEYS " + str([sorted(s.keys()) for s in (data.get("streams") or [])][:2]))
+          out.append("LAST STREAM " + json.dumps({k: (str(v)[:150]) for k, v in (data.get("streams") or [{}])[-1].items()})[:1200])
+
+          streams = data.get("streams") or []
+          mp4 = [s for s in streams if str(s.get("url", "")).find(".mp4") >= 0]
+          target = (mp4 or streams or [{}])[0]
+          url = target.get("url", "")
+          proxy = target.get("proxy_url", "")
+          out.append(f"TARGET res={target.get('resolutions')} codec={target.get('codecName')} url={url[:100]}")
+
+          head(url, "cdn-direct")
+          head(url, "cdn-direct-noreferer", ("-H", "Referer: "))
+          head(url, "cdn-direct-range", ("-H", "Range: bytes=0-1023"))
+          if proxy:
+              full = proxy if proxy.startswith("http") else API + proxy
+              head(full, "api-stream")
+              head(full, "api-stream-range", ("-H", "Range: bytes=0-1023"))
+              head(full, "api-stream-accept", ("-H", "Accept: */*", "-H", "User-Agent: Mozilla/5.0"))
+          head(f"{API}/api/stream/2190807691784770592", "api-stream-id")
+          head(f"{API}/stream?u={urllib.parse.quote(url, safe='')}&cookie=x", "api-stream-cookie")
 
           text = "\n".join(out)
-          print("PROBE-START")
-          print(text)
-          print("PROBE-END")
           esc = text.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
           print("::error::" + esc[:60000])
           open("probe.txt", "w").write(text)
