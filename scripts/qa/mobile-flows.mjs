@@ -236,7 +236,15 @@ async function run() {
       await page.goto(`${APP_URL}/watch/colony-06FbDRS87x3`, { waitUntil: 'domcontentloaded' })
       await settle(2000)
       await page.screenshot({ path: path.join(SHOT_DIR, `${viewport.name}_player.png`) })
-      const hasSettings = await page.evaluate(() => Boolean(document.querySelector('button[aria-label="Playback settings"]')))
+      const visible = (selector) =>
+        page.evaluate((sel) => {
+          const el = document.querySelector(sel)
+          if (!el) return false
+          const rect = el.getBoundingClientRect()
+          const style = getComputedStyle(el)
+          return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
+        }, selector)
+      const hasSettings = await visible('button[aria-label="Playback settings"]')
       const errorPanel = await page.evaluate(() => Boolean(document.querySelector('[role="alert"]')))
       if (hasSettings) {
         await page.click('button[aria-label="Playback settings"]')
@@ -248,20 +256,16 @@ async function run() {
         return { open: Boolean(dialog), text: (dialog?.textContent ?? '').slice(0, 120) }
       })
       // Wider screens keep the inline control-bar menus instead of the sheet.
-      const inlineMenus = await page.evaluate(() =>
-        ['Playback quality', 'Playback speed', 'Subtitles'].every((label) =>
-          [...document.querySelectorAll('button')].some((button) => button.getAttribute('aria-label')?.startsWith(label)),
-        ),
-      )
+      const inlineMenus = await visible('button[aria-label="Playback quality"]')
       const ok = errorPanel ? false : hasSettings ? sheet.open : inlineMenus
       record(
         viewport.name,
         hasSettings ? 'player settings sheet (touch UI)' : 'player inline menus (wide UI)',
         ok,
-        `settingsButton=${hasSettings} sheet=${sheet.open} inlineMenus=${inlineMenus} errorPanel=${errorPanel}`,
+        `settingsButton=${hasSettings} sheet=${sheet.open} inlineQualityMenu=${inlineMenus} errorPanel=${errorPanel}`,
       )
     } catch (error) {
-      record(viewport.name, 'player settings sheet (touch UI)', false, String(error.message).slice(0, 120))
+      record(viewport.name, 'player controls (sheet or inline menus)', false, String(error.message).slice(0, 120))
     }
 
     if (consoleErrors.length) record(viewport.name, 'no runtime errors', false, consoleErrors.slice(0, 2).join(' ~ '))
