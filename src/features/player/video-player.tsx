@@ -10,6 +10,7 @@ import {
   Play,
   RotateCcw,
   RotateCw,
+  Settings2,
   SkipForward,
   TriangleAlert,
   Volume2,
@@ -29,6 +30,8 @@ import { cn } from '@/utils/cn'
 import { useToast } from '@/components/ui/toast'
 import { SeekBar } from './seek-bar'
 import { AspectMenu, AudioMenu, EpisodeMenu, QualityMenu, SpeedMenu, SubtitleMenu } from './player-menus'
+import { MobileSettingsSheet } from './mobile-settings-sheet'
+import { probeMedia } from './media-diagnostics'
 import { loadSubtitleTrack } from './subtitles'
 import { revokeBlobUrl } from './srt'
 import type { Quality, SubtitleTrack, TitleDetail } from '@/services/types'
@@ -74,7 +77,10 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
   const [controlsVisible, setControlsVisible] = useState(true)
   const [scrubbing, setScrubbing] = useState(false)
   const [ended, setEnded] = useState(false)
-  const [mediaError, setMediaError] = useState<string | null>(null)
+  const [mediaError, setMediaError] = useState<{ message: string; detail: string | null; canRefresh: boolean } | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [recovering, setRecovering] = useState(false)
+  const recoveryRef = useRef({ urls: new Set<string>(), resolutions: new Set<number>(), refreshed: false })
   const [seekFeedback, setSeekFeedback] = useState<'forward' | 'back' | null>(null)
   const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>([])
   const [subtitleLoading, setSubtitleLoading] = useState(false)
@@ -302,6 +308,8 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
     setUrlIndex(0)
     setMediaError(null)
     setEnded(false)
+    recoveryRef.current = { urls: new Set(), resolutions: new Set(), refreshed: false }
+    setRecovering(false)
   }, [quality?.id, season, episode])
 
   useEffect(() => {
@@ -323,6 +331,9 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
     video.volume = volume
     video.muted = muted
     video.playbackRate = rate
+    // Not in React's typings for <video>, but supported by browsers: the CDN
+    // signs the URL, so no Referer is needed (and hot-link filters dislike it).
+    video.setAttribute('referrerpolicy', 'no-referrer')
   }, [volume, muted, rate, activeUrl])
 
   useEffect(() => {
@@ -347,6 +358,69 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
   }
 
   /* ---------------------------------------------------------- interactions */
+
+  /**
+   * Recovers from a failed source in three ordered steps before giving up:
+   *   1. another URL for the same rendition (signed CDN ⇄ API proxy),
+   *   2. a lower rendition (codec/container mismatch),
+   *   3. a freshly signed /play response (expired or refused signature).
+   * Then it asks the URL what actually went wrong and reports that.
+   */
+  const handleMediaFailure = useCallback(async () => {
+    const video = videoRef.current
+    if (!video || recovering) return
+    const code = video.error?.code
+    const recovery = recoveryRef.current
+    setWaiting(false)
+
+    // 1. alternative transport for the same rendition
+    if (urlIndex + 1 < candidateUrls.length) {
+      recovery.urls.add(activeUrl ?? '')
+      setUrlIndex((index) => index + 1)
+      return
+    }
+
+    // 2. a smaller rendition often uses a different codec profile / path
+    const lower =
+      qualities
+        .filter((item) => item.resolution > 0 && quality && item.resolution < quality.resolution)
+        .sort((a, b) => b.resolution - a.resolution)[0] ?? null
+    if ((code === 3 || code === 4) && lower && !recovery.resolutions.has(lower.resolution)) {
+      recovery.resolutions.add(lower.resolution)
+      setQualityChoice(lower.resolution)
+      setUrlIndex(0)
+      return
+    }
+
+    // 3. diagnose, then refresh the signed link once if that could help
+    setRecovering(true)
+    setWaiting(false)
+    const probe = activeUrl ? await probeMedia(activeUrl) : null
+    if (probe?.refreshable && !recovery.refreshed) {
+      recovery.refreshed = true
+      setMediaError({
+        message: 'The stream link was rejected — requesting a fresh one.',
+        detail: probe.summary,
+        canRefresh: true,
+      })
+      setRecovering(false)
+      playback.reload()
+      return
+    }
+
+    const fallback: Record<number, string> = {
+      1: 'Playback was aborted by the browser.',
+      2: 'The download was interrupted before the video could start.',
+      3: 'This stream uses a codec this browser cannot decode (the API serves H.265/DASH for some titles).',
+      4: 'The stream host did not return a playable video file.',
+    }
+    setMediaError({
+      message: probe?.summary ?? fallback[code ?? 4] ?? 'The stream could not be played.',
+      detail: probe ? `HTTP ${probe.status || '—'}${probe.contentType ? ` · ${probe.contentType}` : ''}` : null,
+      canRefresh: Boolean(probe?.refreshable),
+    })
+    setRecovering(false)
+  }, [activeUrl, candidateUrls.length, playback, qualities, quality, qualityChoice, recovering, urlIndex])
 
   const handleSurfaceClick = (event: React.MouseEvent<HTMLElement>) => {
     const now = Date.now()
@@ -464,7 +538,9 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
           <p className="max-w-md text-sm text-muted-foreground">
             The API returned no MP4 rendition {title.kind === 'series' ? `for S${season}E${episode}` : 'for this title'}. That usually means
             the source is unavailable, VIP-locked or still processing.
-            {playback.data?.dashUrl ? ' A DASH manifest exists, but this build only plays MP4 renditions.' : ''}
+            {playback.data?.lockedCount ? ` ${playback.data.lockedCount} rendition(s) are VIP-locked upstream.` : ''}
+            {playback.data?.dashUrl ? ' A DASH (H.265) manifest exists, but browsers need an MSE player for it — this build streams MP4 only.' : ''}
+            {playback.data?.hlsUrl ? ' An HLS playlist exists but Safari-only HLS is not enabled here.' : ''}
           </p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
             <Link to={titlePath(title.detailPath)} className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black">
@@ -490,7 +566,13 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       ref={containerRef}
       className={cn(
         'relative isolate w-full overflow-hidden bg-black',
-        fullscreen ? 'h-screen' : 'aspect-video max-h-[88svh] rounded-none md:rounded-2xl',
+        fullscreen
+          ? 'h-screen'
+          : mediaError
+            // An error panel needs room: let the stage grow instead of forcing
+            // a 16:9 box that would clip the message on a phone.
+            ? 'min-h-[56svh] rounded-none md:aspect-video md:min-h-0 md:max-h-[88svh] md:rounded-2xl'
+            : 'aspect-video max-h-[88svh] rounded-none md:rounded-2xl',
       )}
       onPointerMove={showControls}
       onPointerDown={showControls}
@@ -558,22 +640,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
             const video = videoRef.current
             if (video) persist(video.duration, video.duration)
           }}
-          onError={() => {
-            // Try the next candidate URL (proxy ⇄ direct CDN) before failing.
-            if (urlIndex + 1 < candidateUrls.length) {
-              setUrlIndex((index) => index + 1)
-              return
-            }
-            const code = videoRef.current?.error?.code
-            const messages: Record<number, string> = {
-              1: 'Playback was aborted.',
-              2: 'A network error interrupted the stream. The signed URL may have expired.',
-              3: 'This video could not be decoded by your browser (unsupported codec).',
-              4: 'The stream format is not supported by this browser.',
-            }
-            setMediaError(messages[code ?? 4] ?? 'The stream could not be played.')
-            setWaiting(false)
-          }}
+          onError={() => void handleMediaFailure()}
         >
           {vttUrl ? (
             <track
@@ -592,7 +659,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       <div
         className={cn(
           'pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/80 to-transparent p-3 pb-10 transition-opacity duration-300 sm:p-4',
-          controlsVisible ? 'opacity-100' : 'opacity-0',
+          controlsVisible && !mediaError ? 'opacity-100' : 'hidden',
         )}
       >
         <div className="pointer-events-auto flex min-w-0 items-start gap-2">
@@ -634,28 +701,62 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       </div>
 
       {/* center state */}
-      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 z-10 flex items-center justify-center',
+          mediaError && 'z-30 overflow-y-auto overscroll-contain p-2 sm:p-0',
+        )}
+      >
         {mediaError ? (
-          <div className="pointer-events-auto mx-4 max-w-md rounded-2xl border border-white/15 bg-black/80 p-5 text-center backdrop-blur">
+          <div
+            role="alert"
+            className="pointer-events-auto my-auto w-full max-w-md rounded-2xl border border-white/15 bg-black/85 p-3.5 text-center backdrop-blur sm:p-5"
+          >
             <TriangleAlert className="mx-auto mb-2 h-7 w-7 text-destructive" />
-            <h2 className="text-base font-semibold text-white">Playback failed</h2>
-            <p className="mt-1 text-sm text-white/70">{mediaError}</p>
-            <div className="mt-3 flex justify-center gap-2">
+            <h2 className="text-sm font-semibold text-white sm:text-base">Playback failed</h2>
+            <p className="mt-1 text-[13px] leading-snug text-white/75 sm:text-sm">{mediaError.message}</p>
+            {mediaError.detail ? <p className="mt-1 text-[11px] uppercase tracking-widest text-white/40">{mediaError.detail}</p> : null}
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {mediaError.canRefresh ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaError(null)
+                    recoveryRef.current = { urls: new Set(), resolutions: new Set(), refreshed: false }
+                    playback.reload()
+                  }}
+                  className="min-h-10 rounded-full bg-white px-4 text-sm font-semibold text-black"
+                >
+                  Get a fresh link
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {
                   setMediaError(null)
-                  setUrlIndex((index) => (index + 1 < candidateUrls.length ? index + 1 : 0))
+                  recoveryRef.current = { urls: new Set(), resolutions: new Set(), refreshed: false }
+                  setUrlIndex(0)
                   videoRef.current?.load()
+                  void videoRef.current?.play().catch(() => undefined)
                 }}
-                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black"
+                className={cn(
+                  'min-h-10 rounded-full px-4 text-sm font-semibold',
+                  mediaError.canRefresh ? 'border border-white/25 text-white' : 'bg-white text-black',
+                )}
               >
                 Retry
               </button>
-              <Link to={titlePath(title.detailPath)} className="rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white">
+              <Link
+                to={titlePath(title.detailPath)}
+                className="inline-flex min-h-10 items-center rounded-full border border-white/25 px-4 text-sm font-semibold text-white"
+              >
                 Details
               </Link>
             </div>
+            <p className="mt-2.5 hidden text-[11px] leading-snug text-white/40 sm:block">
+              Only the renditions listed by the API are used. If every one fails, the fault is in the upstream stream or CDN — not in this
+              player.
+            </p>
           </div>
         ) : waiting && !ended ? (
           <Loader2 className="h-10 w-10 animate-spin text-white/80" aria-label="Buffering" />
@@ -670,7 +771,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
           </button>
         ) : null}
 
-        {seekFeedback ? (
+        {seekFeedback && !mediaError ? (
           <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur">
               {seekFeedback === 'forward' ? <RotateCw className="h-7 w-7" /> : <RotateCcw className="h-7 w-7" />}
@@ -732,7 +833,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
       <div
         className={cn(
           'absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-2.5 pt-10 transition-opacity duration-300 sm:px-4',
-          controlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
+          mediaError ? 'hidden' : controlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
         <SeekBar
@@ -743,23 +844,38 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
           onScrub={setScrubbing}
         />
 
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-white">
-          <button type="button" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15">
-            {playing ? <Pause className="h-[18px] w-[18px] fill-current" /> : <Play className="ml-0.5 h-[18px] w-[18px] fill-current" />}
+        <div className="mt-1 flex items-center gap-0.5 text-white sm:gap-1.5">
+          <button
+            type="button"
+            onClick={togglePlay}
+            aria-label={playing ? 'Pause' : 'Play'}
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 sm:h-9 sm:w-9"
+          >
+            {playing ? <Pause className="h-5 w-5 fill-current" /> : <Play className="ml-0.5 h-5 w-5 fill-current" />}
           </button>
 
-          <button type="button" onClick={() => skip(-10)} aria-label="Back 10 seconds" className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15 md:hidden">
-            <RotateCcw className="h-[17px] w-[17px]" />
+          <button
+            type="button"
+            onClick={() => skip(-10)}
+            aria-label="Back 10 seconds"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 sm:h-9 sm:w-9"
+          >
+            <RotateCcw className="h-[18px] w-[18px]" />
           </button>
-          <button type="button" onClick={() => skip(10)} aria-label="Forward 10 seconds" className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15 md:hidden">
-            <RotateCw className="h-[17px] w-[17px]" />
+          <button
+            type="button"
+            onClick={() => skip(10)}
+            aria-label="Forward 10 seconds"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 sm:h-9 sm:w-9"
+          >
+            <RotateCw className="h-[18px] w-[18px]" />
           </button>
 
-          <span className="ml-1 select-none text-[11px] font-medium tabular-nums text-white/80">
+          <span className="ml-0.5 select-none whitespace-nowrap text-[11px] font-medium tabular-nums text-white/80">
             {formatTime(currentTime)} <span className="text-white/40">/</span> {formatRemaining(currentTime, duration || playback.data?.durationSeconds || 0)}
           </span>
 
-          <div className="group/volume ml-auto flex items-center gap-1">
+          <div className="group/volume ml-auto flex items-center gap-0.5 sm:gap-1">
             <button
               type="button"
               onClick={() => {
@@ -767,7 +883,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
                 update({ muted: !muted })
               }}
               aria-label={muted ? 'Unmute' : 'Mute'}
-              className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15"
+              className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 sm:h-9 sm:w-9"
             >
               {muted || volume === 0 ? <VolumeX className="h-[18px] w-[18px]" /> : <Volume2 className="h-[18px] w-[18px]" />}
             </button>
@@ -788,6 +904,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
             />
           </div>
 
+          <div className="hidden items-center gap-1.5 sm:flex">
           <SpeedMenu speed={rate} onSelect={setRate} />
           <QualityMenu
             qualities={qualities}
@@ -807,6 +924,16 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
             <EpisodeMenu seasons={detail.seasons} season={season} episode={episode} hasEpisodes={detail.seasons.length > 0} onSelect={onEpisodeChange} />
           ) : null}
           <AspectMenu value={settings.aspectRatio} onSelect={(value) => update({ aspectRatio: value })} />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Playback settings"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 sm:hidden"
+          >
+            <Settings2 className="h-[18px] w-[18px]" />
+          </button>
 
           <button
             type="button"
@@ -821,7 +948,7 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
             type="button"
             onClick={toggleFullscreen}
             aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15"
+            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 sm:h-9 sm:w-9"
           >
             {fullscreen ? <Minimize className="h-[18px] w-[18px]" /> : <Maximize className="h-[18px] w-[18px]" />}
           </button>
@@ -834,6 +961,37 @@ export function VideoPlayer({ detail, season, episode, onEpisodeChange, onVarian
           </p>
         ) : null}
       </div>
+
+      <MobileSettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        qualities={qualities}
+        qualityChoice={qualityChoice}
+        onQuality={(value) => {
+          setQualityChoice(value)
+          setSettingsOpen(false)
+        }}
+        speed={rate}
+        onSpeed={setRate}
+        tracks={subtitleTracks}
+        activeSubtitle={activeSubtitle}
+        subtitleLoading={subtitleLoading}
+        onSubtitle={(track) => {
+          setActiveSubtitle(track)
+          setSettingsOpen(false)
+        }}
+        dubs={detail.dubs}
+        audioLabel={audioLabel}
+        onAudio={(track) => {
+          if (!track.original) onVariantChange(track.detailPath, track.label)
+        }}
+        aspect={settings.aspectRatio}
+        onAspect={(value) => update({ aspectRatio: value })}
+        seasons={detail.seasons}
+        season={season}
+        episode={episode}
+        onEpisode={onEpisodeChange}
+      />
 
       <ProgressBarSeo currentTime={currentTime} duration={duration} />
     </div>

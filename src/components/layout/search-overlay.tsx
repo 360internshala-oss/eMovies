@@ -100,10 +100,15 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   if (!open) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-[95] flex items-start justify-center px-3 pt-[8vh] sm:pt-[12vh]" role="dialog" aria-modal="true" aria-label="Search eMovies">
+    <div
+      className="fixed inset-0 z-[95] flex items-start justify-center px-0 pt-0 sm:px-3 sm:pt-[12vh]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search eMovies"
+    >
       <button type="button" aria-label="Close search" onClick={onClose} className="absolute inset-0 cursor-default bg-black/75 backdrop-blur-md" />
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-popover/95 shadow-2xl backdrop-blur-xl animate-fade-up">
-        <div className="flex items-center gap-3 border-b border-border/70 px-4">
+      <div className="relative flex h-full w-full max-w-2xl flex-col overflow-hidden border-border bg-popover/98 shadow-2xl backdrop-blur-xl animate-fade-up sm:h-auto sm:rounded-2xl sm:border">
+        <div className="flex items-center gap-3 border-b border-border/70 px-4 pt-[env(safe-area-inset-top)]">
           <Search className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
           <input
             ref={inputRef}
@@ -111,17 +116,22 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search movies, series, anime…"
             aria-label="Search titles"
-            className="h-14 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground/70"
+            className="h-14 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground/70 sm:h-14"
             autoComplete="off"
             spellCheck={false}
           />
           {loading ? <Spinner className="text-muted-foreground" /> : null}
-          <button type="button" onClick={onClose} aria-label="Close search" className="rounded-full p-1.5 text-muted-foreground hover:bg-white/10 hover:text-foreground">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close search"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto overscroll-contain p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 sm:max-h-[60vh] sm:flex-none">
           {debounced.length < 2 ? (
             <div className="p-2">
               {recent.length > 0 ? (
@@ -145,7 +155,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                         key={term}
                         type="button"
                         onClick={() => setQuery(term)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
+                        className="inline-flex min-h-8 items-center gap-1 rounded-full border border-border px-3 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
                       >
                         <Clock className="h-3 w-3" />
                         {term}
@@ -178,7 +188,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                       onClose()
                     }}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-xl p-2 text-left transition',
+                      'flex min-h-16 w-full items-center gap-3 rounded-xl p-2 text-left transition',
                       index === activeIndex ? 'bg-white/10' : 'hover:bg-white/5',
                     )}
                   >
@@ -203,7 +213,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           {trendingFallback.length > 0 ? null : null}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-border/70 px-4 py-2.5 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 border-t border-border/70 px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] text-[11px] text-muted-foreground">
           <span className="hidden sm:inline">↑↓ to navigate · Enter to open · Esc to close</span>
           <button type="button" onClick={submitAll} className="ml-auto font-semibold text-primary hover:underline">
             See all results

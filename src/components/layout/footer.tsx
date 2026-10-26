@@ -3,8 +3,8 @@ import { Link } from '@/router/Link'
 
 export function Footer() {
   return (
-    <footer className="mt-16 border-t border-border/60 bg-black/20 px-4 pb-24 pt-10 text-sm lg:px-8 md:pb-10">
-      <div className="mx-auto grid max-w-[1440px] gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+    <footer className="mt-12 border-t border-border/60 bg-black/20 px-4 pb-nav pt-8 text-sm lg:mt-16 lg:px-8 lg:pb-10 lg:pt-10">
+      <div className="mx-auto grid max-w-[1440px] gap-6 sm:grid-cols-2 md:gap-8 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <p className="font-display text-xl font-extrabold tracking-tight">
             e<span className="bg-brand-gradient bg-clip-text text-transparent">Movies</span>
@@ -20,10 +20,10 @@ export function Footer() {
 
         <nav aria-label="Browse">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Browse</h2>
-          <ul className="space-y-1.5">
+          <ul className="space-y-0.5 sm:space-y-1.5">
             {DESKTOP_NAV.filter((item) => item.to !== '/').map((item) => (
               <li key={item.to}>
-                <Link to={item.to} className="text-xs text-foreground/70 transition hover:text-primary">
+                <Link to={item.to} className="inline-flex min-h-7 items-center text-xs text-foreground/70 transition hover:text-primary">
                   {item.label}
                 </Link>
               </li>
@@ -33,10 +33,10 @@ export function Footer() {
 
         <nav aria-label="Library">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Your library</h2>
-          <ul className="space-y-1.5">
+          <ul className="space-y-0.5 sm:space-y-1.5">
             {SECONDARY_NAV.filter((item) => ['/my-list', '/continue-watching', '/history', '/settings'].includes(item.to)).map((item) => (
               <li key={item.to}>
-                <Link to={item.to} className="text-xs text-foreground/70 transition hover:text-primary">
+                <Link to={item.to} className="inline-flex min-h-7 items-center text-xs text-foreground/70 transition hover:text-primary">
                   {item.label}
                 </Link>
               </li>
@@ -46,19 +46,19 @@ export function Footer() {
 
         <nav aria-label="About">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">About</h2>
-          <ul className="space-y-1.5">
+          <ul className="space-y-0.5 sm:space-y-1.5">
             <li>
-              <Link to="/capabilities" className="text-xs text-foreground/70 transition hover:text-primary">
+              <Link to="/capabilities" className="inline-flex min-h-7 items-center text-xs text-foreground/70 transition hover:text-primary">
                 API capabilities
               </Link>
             </li>
             <li>
-              <a href={APP.apiBaseUrl} target="_blank" rel="noreferrer noopener" className="text-xs text-foreground/70 transition hover:text-primary">
+              <a href={APP.apiBaseUrl} target="_blank" rel="noreferrer noopener" className="inline-flex min-h-7 items-center text-xs text-foreground/70 transition hover:text-primary">
                 Upstream API
               </a>
             </li>
             <li>
-              <a href={APP.repoUrl} target="_blank" rel="noreferrer noopener" className="text-xs text-foreground/70 transition hover:text-primary">
+              <a href={APP.repoUrl} target="_blank" rel="noreferrer noopener" className="inline-flex min-h-7 items-center text-xs text-foreground/70 transition hover:text-primary">
                 Source code
               </a>
             </li>

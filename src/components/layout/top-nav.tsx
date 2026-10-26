@@ -33,10 +33,12 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
     <header
       className={cn(
         'fixed inset-x-0 top-0 z-50 transition-all duration-300',
-        scrolled ? 'glass border-b border-border/60' : 'bg-gradient-to-b from-black/70 to-transparent',
+        scrolled
+          ? 'glass border-b border-border/60'
+          : 'bg-gradient-to-b from-background via-background/80 to-transparent dark:from-black/75 dark:via-black/35',
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-3 px-4 lg:px-8">
+      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-4 lg:px-8">
         <Logo />
 
         <nav aria-label="Primary" className="ml-4 hidden items-center gap-0.5 lg:flex">
@@ -59,10 +61,10 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
           <button
             type="button"
             onClick={onOpenSearch}
-            className="flex h-9 items-center gap-2 rounded-full border border-border/80 bg-white/5 px-3 text-xs font-medium text-muted-foreground transition hover:border-primary/50 hover:text-foreground focus-ring sm:pr-10"
+            className="flex h-10 w-10 items-center justify-center gap-2 rounded-full border border-border/80 bg-white/5 text-xs font-medium text-muted-foreground transition hover:border-primary/50 hover:text-foreground focus-ring sm:h-9 sm:w-auto sm:px-3 sm:pr-10"
             aria-label="Open search"
           >
-            <Search className="h-4 w-4" />
+            <Search className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Search titles</span>
             <kbd className="ml-1 hidden rounded border border-border px-1 text-[10px] sm:inline">/</kbd>
           </button>
@@ -84,7 +86,7 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
             type="button"
             onClick={() => update({ theme: nextTheme })}
             aria-label={`Switch to ${nextTheme} theme`}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-white/10 hover:text-foreground focus-ring"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition hover:bg-white/10 hover:text-foreground focus-ring sm:h-9 sm:w-9"
           >
             {settings.theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
@@ -98,7 +100,7 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
                 aria-expanded={open}
                 aria-haspopup="menu"
                 aria-label="Open more navigation"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-white/10 hover:text-foreground focus-ring"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition hover:bg-white/10 hover:text-foreground focus-ring sm:h-9 sm:w-9"
               >
                 <Settings className="h-4 w-4" />
               </button>

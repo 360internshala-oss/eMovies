@@ -107,7 +107,7 @@ function Shell() {
       </a>
       {!online ? <OfflineBanner /> : null}
       <TopNav onOpenSearch={() => setSearchOpen(true)} />
-      <main id="main-content" className={immersive ? 'flex-1 pb-16 md:pb-0' : 'flex-1 pb-20 md:pb-0'}>
+      <main id="main-content" className="flex-1 pb-nav">
         <RouteView />
       </main>
       {!immersive ? <Footer /> : null}

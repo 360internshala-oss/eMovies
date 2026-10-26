@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Sheet } from '@/components/ui/sheet'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/utils/cn'
 import type { CatalogFilters, SortKey } from '@/services/types'
 
@@ -197,7 +196,7 @@ export function FilterBar({ filters, facets, onChange, onClear, activeCount, lea
           type="button"
           onClick={() => setOpen(true)}
           className={cn(
-            'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition focus-ring',
+            'inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition focus-ring sm:h-10',
             activeCount > 0 ? 'border-primary/60 bg-primary/10 text-primary' : 'border-border bg-white/5 text-foreground hover:bg-white/10',
           )}
         >
@@ -262,7 +261,11 @@ export function FilterBar({ filters, facets, onChange, onClear, activeCount, lea
         </div>
 
         {activeCount > 0 ? (
-          <button type="button" onClick={onClear} className="text-xs font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+          <button
+            type="button"
+            onClick={onClear}
+            className="inline-flex min-h-9 items-center px-1 text-xs font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
             Clear all
           </button>
         ) : null}
@@ -271,12 +274,20 @@ export function FilterBar({ filters, facets, onChange, onClear, activeCount, lea
       {chips.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">
           {chips.map((chip) => (
-            <Badge key={chip.key} variant="primary" className="gap-1 py-1 pl-2.5 pr-1">
+            <span
+              key={chip.key}
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-primary/50 bg-primary/15 pl-3 pr-1 text-xs font-semibold text-primary"
+            >
               {chip.label}
-              <button type="button" aria-label={`Remove ${chip.label} filter`} onClick={chip.clear} className="rounded-full p-0.5 hover:bg-primary/20">
-                <X className="h-3 w-3" />
+              <button
+                type="button"
+                aria-label={`Remove ${chip.label} filter`}
+                onClick={chip.clear}
+                className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-primary/25"
+              >
+                <X className="h-3.5 w-3.5" />
               </button>
-            </Badge>
+            </span>
           ))}
         </div>
       ) : null}

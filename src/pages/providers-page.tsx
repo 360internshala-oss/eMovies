@@ -99,7 +99,7 @@ export function ProvidersPage() {
                   ))}
                 </div>
                 <Button variant="ghost" size="sm" className="mt-2 px-0 text-primary" onClick={() => undefined}>
-                  <Link to={`/title/${section.items[0]?.detailPath ?? ''}`} className="text-xs font-semibold">
+                  <Link to={`/title/${section.items[0]?.detailPath ?? ''}`} className="inline-flex min-h-8 items-center text-xs font-semibold">
                     Open first title
                   </Link>
                 </Button>

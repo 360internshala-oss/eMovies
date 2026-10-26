@@ -245,11 +245,15 @@ export interface Quality {
 }
 
 export interface PlaybackSource {
+  /** Progressive MP4 renditions only — the formats `<video>` can actually play. */
   qualities: Quality[]
+  /** Adaptive manifests, kept for transparency but never fed to `<video>`. */
   dashUrl: string | null
   hlsUrl: string | null
   durationSeconds: number | null
   hasResource: boolean
+  /** Streams the catalogue lists but marks VIP-locked / not playable. */
+  lockedCount: number
 }
 
 export interface SubtitleTrack {

@@ -14,7 +14,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "proxy": "node scripts/dev-proxy.mjs"
+    "proxy": "node scripts/dev-proxy.mjs",
+    "audit:mobile": "node scripts/qa/mobile-audit.mjs",
+    "audit:flows": "node scripts/qa/mobile-flows.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

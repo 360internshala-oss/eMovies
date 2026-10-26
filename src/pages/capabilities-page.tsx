@@ -28,7 +28,7 @@ const statusMeta = {
 export function CapabilitiesPage() {
   useDocumentTitle('API capabilities')
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-24 pt-20 lg:pt-24">
+    <div className="mx-auto max-w-4xl px-4 pb-16 pt-20 lg:pb-24 lg:pt-24">
       <PageHeader
         eyebrow="Transparency"
         title="API capability map"
@@ -38,7 +38,7 @@ export function CapabilitiesPage() {
       <div className="mb-6 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p>
-          Upstream: <a className="text-primary hover:underline" href={APP.apiBaseUrl} target="_blank" rel="noreferrer noopener">{APP.apiBaseUrl}</a>. eMovies never
+          Upstream: <a className="inline-flex min-h-7 items-center text-primary hover:underline" href={APP.apiBaseUrl} target="_blank" rel="noreferrer noopener">{APP.apiBaseUrl}</a>. eMovies never
           fabricates quality levels, subtitle tracks, dubs, episodes or providers. Unsupported controls are hidden rather than mocked.
         </p>
       </div>
@@ -69,7 +69,8 @@ export function CapabilitiesPage() {
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-semibold">Endpoints consumed</h2>
         <div className="overflow-hidden rounded-xl border border-border">
-          <table className="w-full text-left text-xs">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <table className="w-full min-w-[34rem] text-left text-xs">
             <thead className="bg-white/5 text-[11px] uppercase tracking-widest text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-semibold">Endpoint</th>
@@ -85,6 +86,7 @@ export function CapabilitiesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </section>
 
@@ -113,7 +115,7 @@ export function CapabilitiesPage() {
         </p>
         <p>
           Read the full write-up in <code>docs/API_CAPABILITIES.md</code>, or head back to the{' '}
-          <Link to="/" className="text-primary hover:underline">
+          <Link to="/" className="inline-flex min-h-7 items-center text-primary hover:underline">
             home page
           </Link>
           .

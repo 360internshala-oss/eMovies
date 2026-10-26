@@ -1,0 +1,63 @@
+name: Mobile & responsive audit
+
+# Renders every route at 320px, 390px, 768px and 1440px in headless Chrome with
+# the API mocked from tests/fixtures/api.ts, then drives the touch UI:
+# bottom navigation, filter sheet, search overlay, theme toggle and the player
+# settings sheet. Fails on horizontal overflow, missing navigation, sub-24px
+# tap targets and broken flows.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm i --no-save puppeteer-core@23
+      - run: npm run build
+      - name: Serve the build
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:4173/ && break; sleep 1; done
+      - name: Layout audit
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/qa/mobile-audit.mjs
+      - name: Interaction flows
+        env:
+          APP_URL: http://127.0.0.1:4173
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/qa/mobile-flows.mjs
+      - name: Upload screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-audit
+          path: artifacts
+          if-no-files-found: warn
+      - name: Fail on layout problems
+        if: always()
+        run: |
+          if grep -q 'hard issues: 0' artifacts/audit-summary.txt 2>/dev/null; then
+            echo "layout: OK"
+          else
+            echo "::error::$(head -c 4000 artifacts/audit-summary.txt | tr '\n' ' ')"
+            exit 1
+          fi
+          if grep -q ' 0 failed' artifacts/flows/flows-summary.txt 2>/dev/null; then
+            echo "flows: OK"
+          else
+            echo "::error::$(head -c 4000 artifacts/flows/flows-summary.txt | tr '\n' ' ')"
+            exit 1
+          fi

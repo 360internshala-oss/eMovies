@@ -87,9 +87,26 @@ caption track actually exists for it.
 
 ## 3. Playback (`/play`)
 
-Verified for `lucifer-UQASHYbVPB2` S1E1: MP4 renditions at **360 / 480 / 720 / 1080**,
-`h264`, `duration: 2700`, plus a DASH (HEVC) manifest that requires an
-`X-MB-Token` header.
+Verified for `lucifer-UQASHYbVPB2` S1E1: **five** entries come back —
+MP4 renditions at **360 / 480 / 720 / 1080** (`h264`, `duration: 2700`,
+`playable: true`) **plus** one DASH manifest entry in the same array:
+
+```jsonc
+{ "id": "7231673470151967104", "format": "DASH", "resolutions": "1080,720,480",
+  "codecName": "hevc", "url": "https://sbcdnw…/dash/…/index_web.mpd" }
+```
+
+That manifest is **not** playable by `<video>` (HEVC + MSE player + an
+`X-MB-Token` header) and is the reason a naive client shows *“The stream format
+is not supported by this browser”*. eMovies therefore splits the array: only
+progressive `.mp4` entries become selectable qualities, and the manifest is
+reported separately (`dashUrl`) and never assigned to a video source. Entries
+with `vipLocked: true` or `playable: false` are skipped and counted.
+
+When every rendition fails, the player probes the URL with a
+`Range: bytes=0-1` request and reports the real cause (403 expired signature,
+429 rate limit, HTML error page, unreachable host) instead of a generic codec
+message — see `src/features/player/media-diagnostics.ts`.
 
 - The MP4 entries carry a **signed CDN `url`** (`sign` + `t` params, expiring) and a
   `proxy_url`. Signed URLs must be re-fetched per playback — eMovies never caches them.

@@ -153,7 +153,7 @@ export function SettingsPage() {
           >
             <RotateCcw className="h-3.5 w-3.5" /> Reset preferences
           </Button>
-          <Link to="/my-list" className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs font-semibold">
+          <Link to="/my-list" className="inline-flex h-10 items-center rounded-full border border-border px-4 text-xs font-semibold">
             Manage My List
           </Link>
         </div>
@@ -164,7 +164,7 @@ export function SettingsPage() {
         <p className="text-xs leading-relaxed text-muted-foreground">
           eMovies runs entirely in the browser and talks to the public Filmy Flow API. It hosts no media, keeps no account and stores no
           credentials. Not every streaming feature can exist without the matching API data — see the{' '}
-          <Link to="/capabilities" className="text-primary hover:underline">
+          <Link to="/capabilities" className="inline-flex min-h-7 items-center text-primary hover:underline">
             capability map
           </Link>
           .

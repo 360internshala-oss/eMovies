@@ -65,13 +65,44 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     scrollbar-color: hsl(var(--border)) transparent;
+    /* Fixed header height; kept in a variable so paddings stay in sync. */
+    --header-h: 3.5rem;
+    scroll-behavior: smooth;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      --header-h: 4rem;
+    }
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     overscroll-behavior-y: none;
+    /* Guard against a single wide child forcing a horizontal scrollbar on
+       phones. Horizontal rails opt back in with their own overflow container. */
+    overflow-x: hidden;
+    min-height: 100svh;
+  }
+
+  /* Media never overflows its box on small screens. */
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  /* iOS zooms into inputs smaller than 16px; keep form fields readable. */
+  @media (max-width: 639px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
   }
 
   ::selection {
@@ -146,7 +177,7 @@
   }
 
   .player-chip {
-    @apply inline-flex h-8 items-center gap-1 rounded-full border border-white/15 bg-black/40 px-2.5 text-[11px] font-semibold text-white/85 backdrop-blur transition hover:bg-white/15 focus-ring;
+    @apply inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full border border-white/15 bg-black/40 px-2.5 text-[11px] font-semibold text-white/85 backdrop-blur transition hover:bg-white/15 focus-ring;
   }
   .player-chip-active {
     @apply border-primary/60 bg-primary/25 text-white;
@@ -167,6 +198,16 @@
 }
 
 @layer utilities {
+  /* Bottom padding that clears the fixed mobile navigation (and the iOS home
+     indicator) without leaving a gap once the desktop nav takes over. */
+  .pb-nav {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 1024px) {
+    .pb-nav {
+      padding-bottom: 0;
+    }
+  }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

@@ -17,6 +17,7 @@ import type {
   RawListResponse,
   RawPlayResponse,
   RawStaff,
+  RawStream,
   RawSubject,
   SubtitleTrack,
   Title,
@@ -366,53 +367,102 @@ function parseResolution(value?: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-function toQuality(stream: NonNullable<RawPlayResponse['streams']>[number], format: Quality['format']): Quality | null {
-  const url = typeof stream.url === 'string' ? stream.url : ''
+/** True when a URL points at a progressive MP4 container the browser can play. */
+function isProgressiveMp4(url: string): boolean {
+  return /\.mp4(?:$|[?#])/i.test(url)
+}
+
+/** True when a URL points at an adaptive manifest (`<video>` cannot play these). */
+export function playlistFormat(url: string): 'DASH' | 'HLS' | null {
+  if (/\.mpd(?:$|[?#])/i.test(url)) return 'DASH'
+  if (/\.m3u8(?:$|[?#])/i.test(url)) return 'HLS'
+  return null
+}
+
+function toQuality(stream: RawStream): Quality | null {
+  const url = typeof stream.url === 'string' ? stream.url.trim() : ''
   if (!url) return null
   const resolution = parseResolution(stream.resolutions)
   const sizeBytes = asNumber(stream.size)
   const proxy = typeof stream.proxy_url === 'string' && stream.proxy_url.startsWith('/')
     ? apiAbsoluteUrl(stream.proxy_url)
-    : null
+    : typeof stream.proxy_url === 'string' && stream.proxy_url.startsWith('http')
+      ? stream.proxy_url
+      : null
   return {
     id: stream.id !== undefined ? String(stream.id) : '',
     resolution,
-    label: resolution > 0 ? `${resolution}p` : format,
+    label: resolution > 0 ? `${resolution}p` : 'MP4',
     url,
     proxyUrl: proxy,
-    format,
+    format: 'MP4',
     sizeBytes: sizeBytes && sizeBytes > 0 ? sizeBytes : null,
     durationSeconds: asNumber(stream.duration),
     codec: typeof stream.codecName === 'string' ? stream.codecName : null,
   }
 }
 
+/**
+ * `/play` mixes progressive MP4 renditions with adaptive manifests in the same
+ * `streams` array (`format: "DASH"`, `url` ending in `.mpd`). Only MP4 entries
+ * are playable by `<video>`, so they alone become selectable qualities — feeding
+ * a `.mpd` to a video element is exactly what produced
+ * "The stream format is not supported by this browser".
+ */
 export function normalizePlay(payload: unknown): PlaybackSource {
   const raw = (payload ?? {}) as RawPlayResponse
   const upstream = raw.upstream?.data
-  const mp4Streams = Array.isArray(raw.streams) && raw.streams.length > 0 ? raw.streams : upstream?.streams ?? []
+  const rawStreams: RawStream[] = Array.isArray(raw.streams) && raw.streams.length > 0
+    ? raw.streams
+    : Array.isArray(upstream?.streams)
+      ? upstream.streams
+      : []
 
   const qualities: Quality[] = []
   const seen = new Set<number>()
-  for (const stream of mp4Streams) {
-    const quality = toQuality(stream, 'MP4')
+  let dashUrl: string | null = null
+  let hlsUrl: string | null = null
+  let lockedCount = 0
+
+  for (const stream of rawStreams) {
+    const url = typeof stream.url === 'string' ? stream.url.trim() : ''
+    if (!url) continue
+    const declared = typeof stream.format === 'string' ? stream.format.toUpperCase() : ''
+    const manifest = declared === 'DASH' || declared === 'HLS' ? declared : playlistFormat(url)
+    if (manifest === 'DASH') {
+      dashUrl = dashUrl ?? url
+      continue
+    }
+    if (manifest === 'HLS') {
+      hlsUrl = hlsUrl ?? url
+      continue
+    }
+    if (!isProgressiveMp4(url)) continue
+    if (stream.vipLocked === true || stream.playable === false) {
+      lockedCount += 1
+      continue
+    }
+    const quality = toQuality(stream)
     if (!quality) continue
-    const signature = quality.resolution
-    if (signature > 0 && seen.has(signature)) continue
-    if (signature > 0) seen.add(signature)
+    // One rendition per resolution; keep the first (upstream orders by size).
+    if (quality.resolution > 0 && seen.has(quality.resolution)) continue
+    if (quality.resolution > 0) seen.add(quality.resolution)
     qualities.push(quality)
   }
   qualities.sort((a, b) => b.resolution - a.resolution)
 
-  const dash = Array.isArray(upstream?.dash) ? upstream?.dash[0] : undefined
-  const hls = Array.isArray(upstream?.hls) ? upstream?.hls[0] : undefined
+  const dashEntry = Array.isArray(upstream?.dash) ? upstream?.dash[0] : undefined
+  const hlsEntry = Array.isArray(upstream?.hls) ? upstream?.hls[0] : undefined
+  if (!dashUrl && dashEntry && typeof dashEntry.url === 'string') dashUrl = dashEntry.url
+  if (!hlsUrl && hlsEntry && typeof hlsEntry.url === 'string') hlsUrl = hlsEntry.url
 
   return {
     qualities,
-    dashUrl: dash?.url && typeof dash.url === 'string' ? dash.url : null,
-    hlsUrl: hls?.url && typeof hls.url === 'string' ? hls.url : null,
+    dashUrl,
+    hlsUrl,
     durationSeconds: qualities[0]?.durationSeconds ?? null,
-    hasResource: qualities.length > 0 || Boolean(dash?.url) || Boolean(hls?.url),
+    hasResource: qualities.length > 0 || Boolean(dashUrl) || Boolean(hlsUrl),
+    lockedCount,
   }
 }
 
