@@ -23,7 +23,7 @@ npm test           # vitest run — 88 tests, 6 files
 npm run typecheck  # strict TypeScript, noUnusedLocals/Parameters on
 ```
 
-Node 18+ is required. No API key or account is needed.
+Node 18.18+ is required (CI uses Node 22). No API key or account is needed.
 
 ### Optional environment (`.env.local`)
 
